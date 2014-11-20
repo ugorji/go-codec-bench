@@ -13,8 +13,11 @@ import (
 	"testing"
 	"time"
 
+	gcbor "code.google.com/p/cbor/go"
+	"github.com/Sereal/Sereal/Go/sereal"
+	"github.com/davecgh/go-xdr/xdr2"
 	vmsgpack "github.com/vmihailenco/msgpack"
-	"labix.org/v2/mgo/bson"
+	"gopkg.in/mgo.v2/bson" //"labix.org/v2/mgo/bson"
 )
 
 // Sample way to run:
@@ -67,11 +70,14 @@ func benchInit() {
 		benchChecker{"binc-sym", fnBincSymEncodeFn, fnBincSymDecodeFn},
 		benchChecker{"simple", fnSimpleEncodeFn, fnSimpleDecodeFn},
 		benchChecker{"cbor", fnCborEncodeFn, fnCborDecodeFn},
+		benchChecker{"gcbor", fnGcborEncodeFn, fnGcborDecodeFn},
 		benchChecker{"json", fnJsonEncodeFn, fnJsonDecodeFn},
 		benchChecker{"std-json", fnStdJsonEncodeFn, fnStdJsonDecodeFn},
 		benchChecker{"gob", fnGobEncodeFn, fnGobDecodeFn},
 		benchChecker{"v-msgpack", fnVMsgpackEncodeFn, fnVMsgpackDecodeFn},
 		benchChecker{"bson", fnBsonEncodeFn, fnBsonDecodeFn},
+		benchChecker{"xdr", fnXdrEncodeFn, fnXdrDecodeFn},
+		benchChecker{"sereal", fnSerealEncodeFn, fnSerealDecodeFn},
 	)
 	if benchDoInitBench {
 		runBenchInit()
@@ -81,7 +87,7 @@ func benchInit() {
 func runBenchInit() {
 	logT(nil, "..............................................")
 	logT(nil, "BENCHMARK INIT: %v", time.Now())
-	logT(nil, "To run full benchmark comparing encodings (MsgPack, Binc, Simple, Cbor, JSON, Std-JSON, GOB, etc), "+
+	logT(nil, "To run full benchmark comparing encodings, "+
 		"use: \"go test -bench=.\"")
 	logT(nil, "Benchmark: ")
 	logT(nil, "\tStruct recursive Depth:             %d", benchDepth)
@@ -129,14 +135,17 @@ func doBenchCheck(name string, encfn benchEncFn, decfn benchDecFn) {
 }
 
 func fnBenchmarkEncode(b *testing.B, encName string, ts interface{}, encfn benchEncFn) {
+	var err error
 	runtime.GC()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := encfn(ts)
-		if err != nil {
-			logT(b, "Error encoding benchTs: %s: %v", encName, err)
-			b.FailNow()
+		if _, err = encfn(ts); err != nil {
+			break
 		}
+	}
+	if err != nil {
+		logT(b, "Error encoding benchTs: %s: %v", encName, err)
+		b.FailNow()
 	}
 }
 
@@ -153,14 +162,17 @@ func fnBenchmarkDecode(b *testing.B, encName string, ts interface{},
 	for i := 0; i < b.N; i++ {
 		ts = newfn()
 		if err = decfn(buf, ts); err != nil {
-			logT(b, "Error decoding into new TestStruc: %s: %v", encName, err)
-			b.FailNow()
+			break
 		}
 		if benchVerify {
 			if vts, vok := ts.(*TestStruc); vok {
 				verifyTsTree(b, vts)
 			}
 		}
+	}
+	if err != nil {
+		logT(b, "Error decoding into new TestStruc: %s: %v", encName, err)
+		b.FailNow()
 	}
 }
 
@@ -247,6 +259,16 @@ func fnCborDecodeFn(buf []byte, ts interface{}) error {
 	return fnCodecDecode(buf, ts, testCborH)
 }
 
+func fnGcborEncodeFn(ts interface{}) (bs []byte, err error) {
+	var buf bytes.Buffer
+	err = gcbor.NewEncoder(&buf).Encode(ts)
+	return buf.Bytes(), err
+}
+
+func fnGcborDecodeFn(buf []byte, ts interface{}) error {
+	return gcbor.NewDecoder(bytes.NewReader(buf)).Decode(ts)
+}
+
 func fnJsonEncodeFn(ts interface{}) (bs []byte, err error) {
 	return fnCodecEncode(ts, testJsonH)
 }
@@ -289,6 +311,25 @@ func fnBsonDecodeFn(buf []byte, ts interface{}) error {
 	return bson.Unmarshal(buf, ts)
 }
 
+func fnXdrEncodeFn(ts interface{}) ([]byte, error) {
+	var buf bytes.Buffer
+	_, err := xdr.Marshal(&buf, ts)
+	return buf.Bytes(), err
+}
+
+func fnXdrDecodeFn(buf []byte, ts interface{}) error {
+	_, err := xdr.Unmarshal(bytes.NewReader(buf), ts)
+	return err
+}
+
+func fnSerealEncodeFn(ts interface{}) ([]byte, error) {
+	return sereal.Marshal(ts)
+}
+
+func fnSerealDecodeFn(buf []byte, ts interface{}) error {
+	return sereal.Unmarshal(buf, ts)
+}
+
 func Benchmark__Msgpack____Encode(b *testing.B) {
 	fnBenchmarkEncode(b, "msgpack", benchTs, fnMsgpackEncodeFn)
 }
@@ -329,6 +370,14 @@ func Benchmark__Cbor_______Decode(b *testing.B) {
 	fnBenchmarkDecode(b, "cbor", benchTs, fnCborEncodeFn, fnCborDecodeFn, fnBenchNewTs)
 }
 
+func Benchmark__Gcbor_______Encode(b *testing.B) {
+	fnBenchmarkEncode(b, "gcbor", benchTs, fnGcborEncodeFn)
+}
+
+func Benchmark__Gcbor_______Decode(b *testing.B) {
+	fnBenchmarkDecode(b, "gcbor", benchTs, fnGcborEncodeFn, fnGcborDecodeFn, fnBenchNewTs)
+}
+
 func Benchmark__Json_______Encode(b *testing.B) {
 	fnBenchmarkEncode(b, "json", benchTs, fnJsonEncodeFn)
 }
@@ -367,6 +416,22 @@ func Benchmark__VMsgpack___Encode(b *testing.B) {
 
 func Benchmark__VMsgpack___Decode(b *testing.B) {
 	fnBenchmarkDecode(b, "v-msgpack", benchTs, fnVMsgpackEncodeFn, fnVMsgpackDecodeFn, fnBenchNewTs)
+}
+
+func Benchmark__Xdr________Encode(b *testing.B) {
+	fnBenchmarkEncode(b, "xdr", benchTs, fnXdrEncodeFn)
+}
+
+func Benchmark__Xdr________Decode(b *testing.B) {
+	fnBenchmarkDecode(b, "xdr", benchTs, fnXdrEncodeFn, fnXdrDecodeFn, fnBenchNewTs)
+}
+
+func Benchmark__Sereal_____Encode(b *testing.B) {
+	fnBenchmarkEncode(b, "sereal", benchTs, fnSerealEncodeFn)
+}
+
+func Benchmark__Sereal_____Decode(b *testing.B) {
+	fnBenchmarkDecode(b, "sereal", benchTs, fnSerealEncodeFn, fnSerealDecodeFn, fnBenchNewTs)
 }
 
 func TestBenchNoop(t *testing.T) {}

@@ -5,9 +5,9 @@ This is a comparison of different binary and text encodings.
 We compare the codecs provided by github.com/ugorji/go/codec package,
 against other libraries:
 
-github.com/ugorji/go/codec [http://godoc.org/github.com/ugorji/go/codec] provides:
+[github.com/ugorji/go/codec](http://github.com/ugorji/go) provides:
 
-  - msgpack: [https://github.com/msgpack/msgpack] 
+  - msgpack: [http://github.com/msgpack/msgpack] 
   - binc:    [http://github.com/ugorji/binc]
   - cbor:    [http://cbor.io] [http://tools.ietf.org/html/rfc7049]
   - simple: 
@@ -15,10 +15,12 @@ github.com/ugorji/go/codec [http://godoc.org/github.com/ugorji/go/codec] provide
 
 Other codecs compared include:
 
-  - [http://godoc.org/github.com/ugorji/go/codec] github.com/vmihailenco/msgpack
-  - [http://godoc.org/labix.org/v2/mgo/bson] labix.org/v2/mgo/bson
-
-
+  - [github.com/vmihailenco/msgpack](http://github.com/vmihailenco/msgpack)
+  - [gopkg.in/mgo.v2/bson](http://gopkg.in/mgo.v2/bson)
+  - [github.com/davecgh/go-xdr/xdr](http://github.com/davecgh/go-xdr/xdr)
+  - [github.com/Sereal/Sereal/Go/sereal](http://github.com/Sereal/Sereal/Go/sereal)
+  - [code.google.com/p/cbor/go](http://code.google.com/p/cbor/go)
+  
 # Data
 
 The data being serialized is the following structure with randomly generated values:
@@ -77,18 +79,28 @@ type AnonInTestStruc struct {
 # Run Benchmarks
 
 ```
-go get -u -t 
+# download the code and all its dependencies 
+go get -u -t github.com/ugorji/go-codec-bench
+
+# benchmark with the default settings 
 go test -bench=.
 
-# To test with a larger struct, use the -bd parameter. e.g.
+# benchmark with a larger struct, using the -bd parameter. and gather pre-info
 go test -bench=. -bd=2 -bi
 
-# To see all the test parameters, use the -Z parameter e.g.
+# see all the test parameters, using the -Z parameter (any recognized param will do)
 go test -Z
-
 ```
 
-# Test Results
+# Issues
+
+The following issues are seen currently (11/20/2014):
+
+- _code.google.com/p/cbor/go_ fails on encoding and decoding the test struct
+- _github.com/davecgh/go-xdr/xdr2_ fails on encoding and decoding the test struct
+- _github.com/Sereal/Sereal/Go/sereal_ fails on decoding the serialized test struct
+
+# Representative Benchmark Results
 
 Results on my 2012 i7-2630QM CPU @ 2.00GHz running Ubuntu 14.04 x86_64 GNU/Linux:
 
@@ -111,6 +123,7 @@ Benchmark One-Pass Run (with Unscientific Encode/Decode times):
 	       gob: len: 1992 bytes, encode: 514.737us, decode: 728.763us
 	 v-msgpack: len: 1628 bytes, encode: 178.522us, decode: 150.268us
 	      bson: len: 3025 bytes, encode: 228.887us, decode: 242.065us
+	    sereal: len: 1193 bytes, encode: 306.941us, _snip_
 ..............................................
 PASS
 Benchmark__Msgpack____Encode	   50000	     68560 ns/op	   16628 B/op	      93 allocs/op
@@ -133,4 +146,5 @@ Benchmark__Bson_______Encode	   10000	    130600 ns/op	   26119 B/op	     405 al
 Benchmark__Bson_______Decode	   10000	    157508 ns/op	   14768 B/op	     422 allocs/op
 Benchmark__VMsgpack___Encode	   50000	     64604 ns/op	   10510 B/op	     107 allocs/op
 Benchmark__VMsgpack___Decode	   10000	    128225 ns/op	   14274 B/op	     270 allocs/op
+Benchmark__Sereal_____Encode	   10000	    104861 ns/op	   20340 B/op	     284 allocs/op
 ```
