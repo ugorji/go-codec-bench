@@ -23,64 +23,17 @@ Other codecs compared include:
   
 # Data
 
-The data being serialized is the following structure with randomly generated values:
-
-The -bd parameter tells how many times the structure contains itself recursively.
-
-```
-type TestStruc struct {
-	S    string
-	I64  int64
-	I16  int16
-	Ui64 uint64
-	Ui8  uint8
-	B    bool
-	By   byte
-
-	Sslice    []string
-	I64slice  []int64
-	I16slice  []int16
-	Ui64slice []uint64
-	Ui8slice  []uint8
-	Bslice    []bool
-	Byslice   []byte
-
-	Islice    []interface{}
-	Iptrslice []*int64
-
-	AnonInTestStruc
-
-	//M map[interface{}]interface{}  `json:"-",bson:"-"`
-	Ms    map[string]interface{}
-	Msi64 map[string]int64
-
-	Nintf      interface{} //don't set this, so we can test for nil
-	T          time.Time
-	Nmap       map[string]bool //don't set this, so we can test for nil
-	Nslice     []byte          //don't set this, so we can test for nil
-	Nint64     *int64          //don't set this, so we can test for nil
-	Mtsptr     map[string]*TestStruc
-	Mts        map[string]TestStruc
-	Its        []*TestStruc
-	Nteststruc *TestStruc
-}
-
-type AnonInTestStruc struct {
-	AS        string
-	AI64      int64
-	AI16      int16
-	AUi64     uint64
-	ASslice   []string
-	AI64slice []int64
-}
-
-```
+The data being serialized is a `TestStruc` randomly generated values.
+See https://github.com/ugorji/go-codec-bench/blob/master/values_test.go for the
+definition of the TestStruc.
 
 # Run Benchmarks
 
 ```
 # download the code and all its dependencies 
 go get -u -t github.com/ugorji/go-codec-bench
+go get -u github.com/ugorji/go/codec/codecgen
+go get -u github.com/philhofer/msgp
 
 # benchmark with the default settings 
 go test -bench=.
@@ -90,6 +43,25 @@ go test -bench=. -bd=2 -bi
 
 # see all the test parameters, using the -Z parameter (any recognized param will do)
 go test -Z
+```
+
+Sample test execution, including setup for codecgen and execution:
+
+```sh
+# If you want to run the benchmarks against code generated values.
+# Then first generate the code generated values from values_test.go named typed.
+# we cannot normally read a _test.go file, so temporarily copy it into a readable file.
+cp values_test.go values_temp.go
+msgp -tests=false -pkg=codec -o=values_msgp.go -file=values_temp.go
+codecgen -rt codecgen -t 'x,codecgen,!unsafe' -o values_codecgen_test.go values_temp.go
+codecgen -u -rt codecgen -t 'x,codecgen,unsafe' -o values_codecgen_unsafe_test.go values_temp.go
+# remove the temp file
+rm -f values_temp.go
+# Run the tests, using only runtime introspection support (normal mode)
+go test -bm -benchmem -bi '-bench=_.*De' -tags=x
+# Run the tests using the codegeneration.
+# This involves passing the tags which enable the appropriate files to be run.
+go test -bm -benchmem -bi -bf '-bench=_.*De' '-tags=x codecgen unsafe'
 ```
 
 # Issues
@@ -102,49 +74,68 @@ The following issues are seen currently (11/20/2014):
 
 # Representative Benchmark Results
 
-Results on my 2012 i7-2630QM CPU @ 2.00GHz running Ubuntu 14.04 x86_64 GNU/Linux:
+Please see the [benchmarking blog post for detailed representative results](http://ugorji.net/blog/benchmarking-serialization-in-go).
+
+A snapshot of some results on my 2012 i7-2630QM CPU @ 2.00GHz running Ubuntu 14.04 x86_64 GNU/Linux:
 
 ```
 $ go test -bench=. -benchmem -bi -bu
 ..............................................
-BENCHMARK INIT: 2014-11-19 21:01:46.072265189 -0500 EST
-__ snip __
+prebuild done successfully
+..............................................
+BENCHMARK INIT: 2014-12-29 11:26:53.539634155 -0500 EST
+To run full benchmark comparing encodings, use: "go test -bench=."
 Benchmark: 
 	Struct recursive Depth:             1
-	ApproxDeepSize Of benchmark Struct: 4462 bytes
-Benchmark One-Pass Run (with Unscientific Encode/Decode times): 
-	   msgpack: len: 1580 bytes, encode: 289.606us, decode: 301.962us
-	binc-nosym: len: 1552 bytes, encode: 137.693us, decode: 217.097us
-	  binc-sym: len: 1179 bytes, encode: 138.842us, decode: 217.388us
-	    simple: len: 1889 bytes, encode: 126.381us, decode: 236.93us
-	      cbor: len: 1584 bytes, encode: 117.908us, decode: 210.059us
-	      json: len: 2554 bytes, encode: 188.474us, decode: 425.691us
-	  std-json: len: 2546 bytes, encode: 369.61us, decode: 597.577us
-	       gob: len: 1992 bytes, encode: 514.737us, decode: 728.763us
-	 v-msgpack: len: 1628 bytes, encode: 178.522us, decode: 150.268us
-	      bson: len: 3025 bytes, encode: 228.887us, decode: 242.065us
-	    sereal: len: 1193 bytes, encode: 306.941us, _snip_
+	ApproxDeepSize Of benchmark Struct: 8259 bytes
+Benchmark One-Pass Run:
+	   msgpack: len: 2086 bytes
+	binc-nosym: len: 2102 bytes
+	  binc-sym: len: 1733 bytes
+	    simple: len: 2402 bytes
+	      cbor: len: 2102 bytes
+	      json: len: 3126 bytes
+	  std-json: len: 3470 bytes
+	       gob: len: 2756 bytes
+	 v-msgpack: len: 2408 bytes
+	      bson: len: 3997 bytes
+	      msgp: len: 2456 bytes
+	     gcbor: len: 2716 bytes
+	       xdr: **** Error encoding benchTs: xdr:encodeInterface: can't encode nil interface
+	       xdr: len: 576 bytes
+	    sereal: len: 1676 bytes
 ..............................................
-PASS
-Benchmark__Msgpack____Encode	   50000	     68560 ns/op	   16628 B/op	      93 allocs/op
-Benchmark__Msgpack____Decode	   10000	    116583 ns/op	   14462 B/op	     258 allocs/op
-Benchmark__Binc_NoSym_Encode	   50000	     68423 ns/op	   16592 B/op	      93 allocs/op
-Benchmark__Binc_NoSym_Decode	   10000	    113283 ns/op	   13208 B/op	     242 allocs/op
-Benchmark__Binc_Sym___Encode	   20000	     82808 ns/op	   18780 B/op	      97 allocs/op
-Benchmark__Binc_Sym___Decode	   10000	    125974 ns/op	   14877 B/op	     204 allocs/op
-Benchmark__Simple_____Encode	   50000	     70421 ns/op	   16629 B/op	      93 allocs/op
-Benchmark__Simple_____Decode	   10000	    116058 ns/op	   13630 B/op	     246 allocs/op
-Benchmark__Cbor_______Encode	   50000	     68901 ns/op	   16628 B/op	      93 allocs/op
-Benchmark__Cbor_______Decode	   10000	    112324 ns/op	   13630 B/op	     246 allocs/op
-Benchmark__Json_______Encode	   20000	     97063 ns/op	   21665 B/op	     102 allocs/op
-Benchmark__Json_______Decode	   10000	    212053 ns/op	   14469 B/op	     273 allocs/op
-Benchmark__Std_Json___Encode	   20000	     92538 ns/op	   14807 B/op	     132 allocs/op
-Benchmark__Std_Json___Decode	   10000	    273706 ns/op	   12840 B/op	     265 allocs/op
-Benchmark__Gob________Encode	   10000	    149301 ns/op	   22100 B/op	     222 allocs/op
-Benchmark__Gob________Decode	    5000	    420676 ns/op	   79633 B/op	    1656 allocs/op
-Benchmark__Bson_______Encode	   10000	    130600 ns/op	   26119 B/op	     405 allocs/op
-Benchmark__Bson_______Decode	   10000	    157508 ns/op	   14768 B/op	     422 allocs/op
-Benchmark__VMsgpack___Encode	   50000	     64604 ns/op	   10510 B/op	     107 allocs/op
-Benchmark__VMsgpack___Decode	   10000	    128225 ns/op	   14274 B/op	     270 allocs/op
-Benchmark__Sereal_____Encode	   10000	    104861 ns/op	   20340 B/op	     284 allocs/op
+
+Benchmark__Noop_______Encode	   10000	     66478 ns/op	    9315 B/op	      73 allocs/op
+Benchmark__Msgpack____Encode	   10000	     82843 ns/op	    9219 B/op	      70 allocs/op
+Benchmark__Binc_NoSym_Encode	   10000	     82529 ns/op	    9379 B/op	      74 allocs/op
+Benchmark__Binc_Sym___Encode	   10000	     96508 ns/op	   11498 B/op	      78 allocs/op
+Benchmark__Simple_____Encode	   10000	     84089 ns/op	    9219 B/op	      70 allocs/op
+Benchmark__Cbor_______Encode	   10000	     81773 ns/op	    9187 B/op	      70 allocs/op
+Benchmark__Json_______Encode	   10000	    107768 ns/op	    9267 B/op	      70 allocs/op
+Benchmark__Std_Json___Encode	    5000	    123896 ns/op	   16313 B/op	     207 allocs/op
+Benchmark__Gob________Encode	    3000	    214663 ns/op	   16080 B/op	     333 allocs/op
+Benchmark__Bson_______Encode	    5000	    192314 ns/op	   34224 B/op	     852 allocs/op
+Benchmark__VMsgpack___Encode	   10000	     93946 ns/op	   17425 B/op	     281 allocs/op
+Benchmark__Msgp_______Encode	   30000	     29468 ns/op	    1984 B/op	       8 allocs/op
+Benchmark__Gcbor_______Encode	   10000	    103720 ns/op	    6768 B/op	     330 allocs/op
+Benchmark__Xdr________Encode	--- FAIL: _snip_
+Benchmark__Sereal_____Encode	    5000	    147433 ns/op	   27814 B/op	     481 allocs/op
+
+Benchmark__Noop_______Decode	  100000	      5391 ns/op	    2060 B/op	       4 allocs/op
+Benchmark__Msgpack____Decode	    5000	    131391 ns/op	   12880 B/op	     370 allocs/op
+Benchmark__Binc_NoSym_Decode	    5000	    131739 ns/op	   12720 B/op	     358 allocs/op
+Benchmark__Binc_Sym___Decode	    5000	    159744 ns/op	   17376 B/op	     265 allocs/op
+Benchmark__Simple_____Decode	    5000	    131010 ns/op	   12688 B/op	     358 allocs/op
+Benchmark__Cbor_______Decode	    5000	    131370 ns/op	   12800 B/op	     366 allocs/op
+Benchmark__Json_______Decode	    3000	    213812 ns/op	   15360 B/op	     455 allocs/op
+Benchmark__Std_Json___Decode	    2000	    362146 ns/op	   17992 B/op	     629 allocs/op
+Benchmark__Gob________Decode	    2000	    507253 ns/op	   79744 B/op	    2041 allocs/op
+Benchmark__Bson_______Decode	    3000	    216456 ns/op	   19976 B/op	    1246 allocs/op
+Benchmark__VMsgpack___Decode	    5000	    150931 ns/op	   17744 B/op	     548 allocs/op
+Benchmark__Msgp_______Decode	   10000	     51247 ns/op	    8904 B/op	     200 allocs/op
+Benchmark__Gcbor_______Decode	2014/12/29 11:27:02 Error: _snip_
+Benchmark__Xdr________Decode	--- FAIL: _snip_
+Benchmark__Sereal_____Decode	--- FAIL: _snip_
+
 ```
