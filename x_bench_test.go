@@ -13,8 +13,9 @@ import (
 	"github.com/Sereal/Sereal/Go/sereal"
 	"github.com/davecgh/go-xdr/xdr2"
 	"github.com/philhofer/msgp/msgp"
-	vmsgpack "github.com/vmihailenco/msgpack"
-	"gopkg.in/mgo.v2/bson" //"labix.org/v2/mgo/bson"
+	"github.com/pquerna/ffjson/ffjson"
+	"gopkg.in/mgo.v2/bson"                     //"labix.org/v2/mgo/bson"
+	vmsgpack "gopkg.in/vmihailenco/msgpack.v2" //"github.com/vmihailenco/msgpack"
 )
 
 func init() {
@@ -25,6 +26,7 @@ func benchXPreInit() {
 	benchCheckers = append(benchCheckers,
 		benchChecker{"v-msgpack", fnVMsgpackEncodeFn, fnVMsgpackDecodeFn},
 		benchChecker{"bson", fnBsonEncodeFn, fnBsonDecodeFn},
+		benchChecker{"ffjson", fnFfjsonEncodeFn, fnFfjsonDecodeFn},
 		benchChecker{"msgp", fnMsgpEncodeFn, fnMsgpDecodeFn},
 		// place codecs with issues at the end, so as not to make results too ugly
 		benchChecker{"gcbor", fnGcborEncodeFn, fnGcborDecodeFn},
@@ -47,6 +49,16 @@ func fnBsonEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
 
 func fnBsonDecodeFn(buf []byte, ts interface{}) error {
 	return bson.Unmarshal(buf, ts)
+}
+
+func fnFfjsonEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
+	return ffjson.Marshal(ts)
+	// return ts.(json.Marshaler).MarshalJSON()
+}
+
+func fnFfjsonDecodeFn(buf []byte, ts interface{}) error {
+	return ffjson.Unmarshal(buf, ts)
+	// return ts.(json.Unmarshaler).UnmarshalJSON(buf)
 }
 
 func fnXdrEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
@@ -121,6 +133,14 @@ func Benchmark__Msgp_______Decode(b *testing.B) {
 }
 
 // Place codecs with issues at the bottom, so as not to make results look too ugly.
+
+func Benchmark__Ffjson_____Encode(b *testing.B) {
+	fnBenchmarkEncode(b, "ffjson", benchTs, fnFfjsonEncodeFn)
+}
+
+func Benchmark__Ffjson_____Decode(b *testing.B) {
+	fnBenchmarkDecode(b, "ffjson", benchTs, fnFfjsonEncodeFn, fnFfjsonDecodeFn, fnBenchNewTs)
+}
 
 func Benchmark__Gcbor_______Encode(b *testing.B) {
 	fnBenchmarkEncode(b, "gcbor", benchTs, fnGcborEncodeFn)
