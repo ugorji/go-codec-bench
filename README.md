@@ -34,6 +34,8 @@ definition of the TestStruc.
 go get -u -t github.com/ugorji/go-codec-bench
 go get -u github.com/ugorji/go/codec/codecgen
 go get -u github.com/philhofer/msgp
+go get -u github.com/pquerna/ffjson
+go get -u github.com/pquerna/ffjson/ffjson
 
 # benchmark with the default settings 
 go test -bench=.
