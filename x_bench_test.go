@@ -1,7 +1,7 @@
 //+build x
 
 // Copyright (c) 2012-2015 Ugorji Nwoke. All rights reserved.
-// Use of this source code is governed by a BSD-style license found in the LICENSE file.
+// Use of this source code is governed by a MIT license found in the LICENSE file.
 
 package codec
 
@@ -12,11 +12,26 @@ import (
 	gcbor "code.google.com/p/cbor/go"
 	"github.com/Sereal/Sereal/Go/sereal"
 	"github.com/davecgh/go-xdr/xdr2"
-	"github.com/philhofer/msgp/msgp"
 	"github.com/pquerna/ffjson/ffjson"
+	"github.com/tinylib/msgp/msgp"
 	"gopkg.in/mgo.v2/bson"                     //"labix.org/v2/mgo/bson"
 	vmsgpack "gopkg.in/vmihailenco/msgpack.v2" //"github.com/vmihailenco/msgpack"
 )
+
+/*
+ To update all these, use:
+ go get -u github.com/tinylib/msgp/msgp github.com/tinylib/msgp \
+           github.com/pquerna/ffjson/ffjson github.com/pquerna/ffjson \
+           github.com/Sereal/Sereal/Go/sereal \
+           code.google.com/p/cbor/go \
+           github.com/davecgh/go-xdr/xdr2 \
+           gopkg.in/mgo.v2/bson \
+           gopkg.in/vmihailenco/msgpack.v2
+
+ Known Issues with external libraries:
+ - msgp io.R/W support doesn't work. It throws error
+
+*/
 
 func init() {
 	testPreInitFns = append(testPreInitFns, benchXPreInit)
@@ -81,7 +96,7 @@ func fnSerealDecodeFn(buf []byte, ts interface{}) error {
 }
 
 func fnMsgpEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
-	if benchUseIO {
+	if testUseIoEncDec {
 		buf := fnBenchmarkByteBuf(bsIn)
 		err := ts.(msgp.Encodable).EncodeMsg(msgp.NewWriter(buf))
 		return buf.Bytes(), err
@@ -90,7 +105,7 @@ func fnMsgpEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
 }
 
 func fnMsgpDecodeFn(buf []byte, ts interface{}) (err error) {
-	if benchUseIO {
+	if testUseIoEncDec {
 		err = ts.(msgp.Decodable).DecodeMsg(msgp.NewReader(bytes.NewReader(buf)))
 	} else {
 		_, err = ts.(msgp.Unmarshaler).UnmarshalMsg(buf)

@@ -1,7 +1,7 @@
 // // +build testing
 
 // Copyright (c) 2012-2015 Ugorji Nwoke. All rights reserved.
-// Use of this source code is governed by a BSD-style license found in the LICENSE file.
+// Use of this source code is governed by a MIT license found in the LICENSE file.
 
 package codec
 
@@ -57,6 +57,11 @@ type TestStruc struct {
 
 	Iptrslice []*int64
 
+	// TODO: test these separately, specifically for reflection and codecgen.
+	// Unfortunately, ffjson doesn't support these. Its compilation even fails.
+	// Ui64array      [4]uint64
+	// Ui64slicearray [][4]uint64
+
 	AnonInTestStruc
 
 	//M map[interface{}]interface{}  `json:"-",bson:"-"`
@@ -74,6 +79,14 @@ type TestStruc struct {
 	Mts        map[string]TestStruc
 	Its        []*TestStruc
 	Nteststruc *TestStruc
+}
+
+// small struct for testing that codecgen works for unexported types
+type tLowerFirstLetter struct {
+	I int
+	u uint64
+	S string
+	b []byte
 }
 
 func newTestStruc(depth int, bench bool, useInterface, useStringKeyOnly bool) (ts *TestStruc) {

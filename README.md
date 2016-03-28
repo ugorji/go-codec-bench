@@ -60,10 +60,10 @@ codecgen -u -rt codecgen -t 'x,codecgen,unsafe' -o values_codecgen_unsafe_test.g
 # remove the temp file
 rm -f values_temp.go
 # Run the tests, using only runtime introspection support (normal mode)
-go test -bm -benchmem -bi '-bench=_.*De' -tags=x
+go test -tm -bi -benchmem '-bench=_.*De' -tags=x
 # Run the tests using the codegeneration.
 # This involves passing the tags which enable the appropriate files to be run.
-go test -bm -benchmem -bi -bf '-bench=_.*De' '-tags=x codecgen unsafe'
+go test -tm -tf -bi -benchmem '-bench=_.*De' '-tags=x codecgen unsafe'
 ```
 
 # Issues
