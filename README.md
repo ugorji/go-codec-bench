@@ -36,6 +36,7 @@ go get -u github.com/ugorji/go/codec/codecgen
 go get -u github.com/philhofer/msgp
 go get -u github.com/pquerna/ffjson
 go get -u github.com/pquerna/ffjson/ffjson
+go get -u bitbucket.org/bodhisnarkva/cbor/go
 
 # benchmark with the default settings 
 go test -bench=.
