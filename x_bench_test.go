@@ -1,4 +1,4 @@
-//+build x
+// +build x
 
 // Copyright (c) 2012-2015 Ugorji Nwoke. All rights reserved.
 // Use of this source code is governed by a MIT license found in the LICENSE file.
@@ -9,7 +9,8 @@ import (
 	"bytes"
 	"testing"
 
-	gcbor "code.google.com/p/cbor/go"
+	// gcbor "code.google.com/p/cbor/go"
+	gcbor "bitbucket.org/bodhisnarkva/cbor/go"
 	"github.com/Sereal/Sereal/Go/sereal"
 	"github.com/davecgh/go-xdr/xdr2"
 	"github.com/pquerna/ffjson/ffjson"
@@ -23,7 +24,7 @@ import (
  go get -u github.com/tinylib/msgp/msgp github.com/tinylib/msgp \
            github.com/pquerna/ffjson/ffjson github.com/pquerna/ffjson \
            github.com/Sereal/Sereal/Go/sereal \
-           code.google.com/p/cbor/go \
+           bitbucket.org/bodhisnarkva/cbor/go \
            github.com/davecgh/go-xdr/xdr2 \
            gopkg.in/mgo.v2/bson \
            gopkg.in/vmihailenco/msgpack.v2
