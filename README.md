@@ -54,16 +54,21 @@ Sample test execution, including setup for codecgen and execution:
 # If you want to run the benchmarks against code generated values.
 # Then first generate the code generated values from values_test.go named typed.
 # we cannot normally read a _test.go file, so temporarily copy it into a readable file.
+
+zmydir=`pwd`
+zgobase=${zmydir%%/src/*}
 cp values_test.go values_temp.go
-msgp -tests=false -pkg=codec -o=values_msgp.go -file=values_temp.go
-codecgen -rt codecgen -t 'x,codecgen,!unsafe' -o values_codecgen_test.go values_temp.go
-codecgen -u -rt codecgen -t 'x,codecgen,unsafe' -o values_codecgen_unsafe_test.go values_temp.go
+msgp -tests=false -o=values_msgp.go -file=values_temp.go
+$zgobase/bin/codecgen -rt codecgen -t 'x,codecgen,!unsafe' -o values_codecgen_test.go -d 19780 values_temp.go
+$zgobase/bin/codecgen -u -rt codecgen -t 'x,codecgen,unsafe' -o values_codecgen_unsafe_test.go -d 19781 values_temp.go
 # remove the temp file
 rm -f values_temp.go
 # Run the tests, using only runtime introspection support (normal mode)
+go test -tm -bi -benchmem '-bench=_.*En' -tags=x
 go test -tm -bi -benchmem '-bench=_.*De' -tags=x
 # Run the tests using the codegeneration.
 # This involves passing the tags which enable the appropriate files to be run.
+go test -tm -tf -bi -benchmem '-bench=_.*En' '-tags=x codecgen unsafe'
 go test -tm -tf -bi -benchmem '-bench=_.*De' '-tags=x codecgen unsafe'
 ```
 
