@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
-	"flag"
 	"reflect"
 	"runtime"
 	"testing"
@@ -18,7 +17,6 @@ import (
 // go test -bi -bv -bd=1 -benchmem -bench=.
 
 func init() {
-	benchInitFlags()
 	testPreInitFns = append(testPreInitFns, benchPreInit)
 	testPostInitFns = append(testPostInitFns, benchPostInit)
 }
@@ -28,15 +26,7 @@ var (
 
 	approxSize int
 
-	benchDoInitBench      bool
-	benchVerify           bool
-	benchUnscientificRes  bool = false
-	benchMapStringKeyOnly bool
-	//depth of 0 maps to ~400bytes json-encoded string, 1 maps to ~1400 bytes, etc
-	//For depth>1, we likely trigger stack growth for encoders, making benchmarking unreliable.
-	benchDepth     int
-	benchInitDebug bool
-	benchCheckers  []benchChecker
+	benchCheckers []benchChecker
 )
 
 type benchEncFn func(interface{}, []byte) ([]byte, error)
@@ -47,15 +37,6 @@ type benchChecker struct {
 	name     string
 	encodefn benchEncFn
 	decodefn benchDecFn
-}
-
-func benchInitFlags() {
-	flag.BoolVar(&benchMapStringKeyOnly, "bs", false, "Bench use maps with string keys only")
-	flag.BoolVar(&benchInitDebug, "bg", false, "Bench Debug")
-	flag.IntVar(&benchDepth, "bd", 1, "Bench Depth")
-	flag.BoolVar(&benchDoInitBench, "bi", false, "Run Bench Init")
-	flag.BoolVar(&benchVerify, "bv", false, "Verify Decoded Value during Benchmark")
-	flag.BoolVar(&benchUnscientificRes, "bu", false, "Show Unscientific Results during Benchmark")
 }
 
 func benchPreInit() {
@@ -138,14 +119,6 @@ func doBenchCheck(name string, encfn benchEncFn, decfn benchDecFn) {
 	logT(nil, "\t%10s: len: %d bytes, encode: %v, decode: %v\n", name, encLen, encDur, decDur)
 }
 
-func fnBenchmarkByteBuf(bsIn []byte) (buf *bytes.Buffer) {
-	// var buf bytes.Buffer
-	// buf.Grow(approxSize)
-	buf = bytes.NewBuffer(bsIn)
-	buf.Truncate(0)
-	return
-}
-
 func fnBenchmarkEncode(b *testing.B, encName string, ts interface{}, encfn benchEncFn) {
 	testOnce.Do(testInitAll)
 	var err error
@@ -199,6 +172,8 @@ func fnBenchmarkDecode(b *testing.B, encName string, ts interface{},
 		b.FailNow()
 	}
 }
+
+// ------------ tests below
 
 func fnMsgpackEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
 	return benchFnCodecEncode(ts, bsIn, testMsgpackH)
