@@ -124,8 +124,7 @@ A snapshot of some results on my 2016 MacBook Pro is below.
 Below are results in the default execution phase, without codecgen.
 
 ```
-$ go test -bench=. -benchmem -tags x -bi -bu 
-go test -bench=. -benchmem -tags x -bi -bu -bd 2
+$ go test -bench=. -benchmem -tags x -bi -bu -bd 2
 BENCHMARK INIT: 2017-09-18 18:03:06.563956051 -0400 EDT m=+0.003244434
 Benchmark: 
 	Struct recursive Depth:             2
@@ -192,67 +191,109 @@ with codecgen. We think that users should carefully weight the performance impro
 usability and binary-size increases. Already, the performance is extremely good without the codecgen path.
 
 ```
-$ go test -bench=. -benchmem -tags "codecgen x" -bi -bu
-BENCHMARK INIT: 2017-09-18 18:12:14.369376931 -0400 EDT m=+0.004679936
+$ go test -bench=. -benchmem -tags "codecgen x" -bi -bu -bd 2
+BENCHMARK INIT: 2017-09-18 18:53:12.918740626 -0400 EDT m=+0.002959732
 Benchmark: 
-	Struct recursive Depth:             1
-	ApproxDeepSize Of benchmark Struct: 8313 bytes
+	Struct recursive Depth:             2
+	ApproxDeepSize Of benchmark Struct: 27046 bytes
 Benchmark One-Pass Run (with Unscientific Encode/Decode times): 
-	   msgpack: len: 2414 bytes,	 encode: 93.317µs,	 decode: 166.476µs
-	      binc: len: 2352 bytes,	 encode: 46.048µs,	 decode: 90.981µs
-	    simple: len: 2710 bytes,	 encode: 80.277µs,	 decode: 78µs
-	      cbor: len: 2422 bytes,	 encode: 38.194µs,	 decode: 90.461µs
-	      json: len: 3634 bytes,	 encode: 110.29µs,	 decode: 140.026µs
-	  std-json: len: 4106 bytes,	 encode: 255.669µs,	 decode: 332.149µs
-	       gob: len: 3136 bytes,	 encode: 421.283µs,	 decode: 345.01µs
-	 json-iter: len: 4158 bytes,	 encode: 1.017363ms,	 decode: 354.167µs
-	 v-msgpack: len: 2840 bytes,	 encode: 174.324µs,	 decode: 325.908µs
-	      bson: len: 4557 bytes,	 encode: 200.042µs,	 decode: 199.357µs
-	      msgp: len: 2884 bytes,	 encode: 53.565µs,	 decode: 68.737µs
-	  easyjson: len: 3634 bytes,	 encode: 104.888µs,	 decode: 93.713µs
+	   msgpack: len: 7862 bytes,	 encode: 131.676µs,	 decode: 165.316µs
+	      binc: len: 7584 bytes,	 encode: 67.326µs,	 decode: 183.64µs
+	    simple: len: 8830 bytes,	 encode: 75.497µs,	 decode: 121.013µs
+	      cbor: len: 7888 bytes,	 encode: 68.159µs,	 decode: 160.067µs
+	      json: len: 11839 bytes,	 encode: 143.843µs,	 decode: 208.065µs
+	  std-json: len: 13346 bytes,	 encode: 302.067µs,	 decode: 604.291µs
+	       gob: len: 7990 bytes,	 encode: 392.578µs,	 decode: 324.268µs
+	 json-iter: len: 13515 bytes,	 encode: 662.717µs,	 decode: 343.62µs
+	 v-msgpack: len: 9233 bytes,	 encode: 262.835µs,	 decode: 349.634µs
+	      bson: len: 14817 bytes,	 encode: 359.744µs,	 decode: 394.882µs
+	      msgp: len: 9376 bytes,	 encode: 79.804µs,	 decode: 92.386µs
+	  easyjson: len: 11839 bytes,	 encode: 161.526µs,	 decode: 165.198µs
+panic: runtime error: invalid memory address or nil pointer dereference
 	     gcbor: **** Error decoding into new TestStruc: can't read map into *codec.AnonInTestStrucIntf
-	     gcbor: len: 2800 bytes,	 encode: 83.734µs,	 decode: 136.374µs
+	     gcbor: len: 9103 bytes,	 encode: 190.042µs,	 decode: 103.035µs
 	       xdr: **** Error encoding benchTs: xdr:encodeInterface: can't encode nil interface
 	       xdr: **** Error decoding into new TestStruc: xdr:decodeInterface: can't decode to nil interface
-	       xdr: len: 672 bytes,	 encode: 63.562µs,	 decode: 60.419µs
+	       xdr: len: 672 bytes,	 encode: 58.712µs,	 decode: 63.731µs
 	    sereal: **** Error decoding into new TestStruc: reflect: call of reflect.Value.Set on zero Value
-	    sereal: len: 2008 bytes,	 encode: 141.595µs,	 decode: 108.217µs
+	    sereal: len: 3730 bytes,	 encode: 195.442µs,	 decode: 56.763µs
 ..............................................
 goos: darwin
 goarch: amd64
 pkg: ugorji.net/codec
-Benchmark__Msgpack____Encode-8   	  200000	     10841 ns/op	     944 B/op	       8 allocs/op
-Benchmark__VMsgpack___Encode-8   	   20000	     63540 ns/op	   12304 B/op	      91 allocs/op
-Benchmark__Msgp_______Encode-8   	  200000	      9254 ns/op	       0 B/op	       0 allocs/op
-Benchmark__Binc_______Encode-8   	  200000	     11896 ns/op	    1664 B/op	      10 allocs/op
-Benchmark__Simple_____Encode-8   	  100000	     12656 ns/op	     944 B/op	       8 allocs/op
-Benchmark__Cbor_______Encode-8   	  200000	     10982 ns/op	     880 B/op	       4 allocs/op
-Benchmark__Gcbor______Encode-8   	   30000	     52572 ns/op	    7136 B/op	     435 allocs/op
-Benchmark__Json_______Encode-8   	   50000	     26871 ns/op	    1200 B/op	       8 allocs/op
-Benchmark__Std_Json___Encode-8   	   30000	     50957 ns/op	   17776 B/op	     174 allocs/op
-Benchmark__Easyjson___Encode-8   	   50000	     30855 ns/op	   10754 B/op	      52 allocs/op
-Benchmark__Ffjson_____Encode-8   	   20000	     53468 ns/op	   29343 B/op	     237 allocs/op
-Benchmark__JsonIter___Encode-8   	   30000	     41787 ns/op	   12976 B/op	     311 allocs/op
-Benchmark__Bson_______Encode-8   	   20000	     68591 ns/op	   31098 B/op	     474 allocs/op
-Benchmark__Gob________Encode-8   	   20000	     72392 ns/op	   14184 B/op	     232 allocs/op
-Benchmark__Msgpack____Decode-8   	   50000	     28085 ns/op	   11896 B/op	     206 allocs/op
-Benchmark__Binc_______Decode-8   	   50000	     34322 ns/op	   12640 B/op	     193 allocs/op
-Benchmark__Simple_____Decode-8   	   50000	     28560 ns/op	   11904 B/op	     206 allocs/op
-Benchmark__Cbor_______Decode-8   	   50000	     39291 ns/op	   12024 B/op	     214 allocs/op
---- FAIL: Benchmark__Gcbor______Decode error: gcbor: can't read map into *codec.AnonInTestStrucIntf
---- FAIL: Benchmark__Xdr________Encode error: xdr: xdr:encodeInterface: can't encode nil interface
-Benchmark__Sereal_____Encode-8   	   30000	     60627 ns/op	   28711 B/op	     526 allocs/op
-Benchmark__Json_______Decode-8   	   30000	     51448 ns/op	   14736 B/op	     226 allocs/op
-Benchmark__Std_Json___Decode-8   	   10000	    166456 ns/op	   17576 B/op	     604 allocs/op
-Benchmark__Easyjson___Decode-8   	   50000	     35360 ns/op	   12128 B/op	     212 allocs/op
+Benchmark__Msgpack____Encode-8   	   50000	     35865 ns/op	    2528 B/op	      20 allocs/op
+Benchmark__VMsgpack___Encode-8   	   10000	    205336 ns/op	   47072 B/op	     282 allocs/op
+Benchmark__Msgp_______Encode-8   	   50000	     34997 ns/op	       0 B/op	       0 allocs/op
+Benchmark__Binc_______Encode-8   	   50000	     35811 ns/op	    3248 B/op	      22 allocs/op
+Benchmark__Simple_____Encode-8   	   50000	     40413 ns/op	    2528 B/op	      20 allocs/op
+Benchmark__Cbor_______Encode-8   	   50000	     36796 ns/op	    2320 B/op	       7 allocs/op
+Benchmark__Gcbor______Encode-8   	   10000	    168929 ns/op	   23336 B/op	    1413 allocs/op
+Benchmark__Json_______Encode-8   	   20000	     86954 ns/op	    3072 B/op	      20 allocs/op
+Benchmark__JsonIter___Encode-8   	   10000	    138147 ns/op	   40496 B/op	    1013 allocs/op
+Benchmark__Std_Json___Encode-8   	   10000	    159704 ns/op	   65248 B/op	     560 allocs/op
+Benchmark__Easyjson___Encode-8   	   20000	    100054 ns/op	   32292 B/op	     153 allocs/op
+Benchmark__Ffjson_____Encode-8   	   10000	    171808 ns/op	   65445 B/op	     652 allocs/op
+Benchmark__Bson_______Encode-8   	   10000	    221200 ns/op	  121380 B/op	    1496 allocs/op
+Benchmark__Gob________Encode-8   	   10000	    157812 ns/op	   47230 B/op	     523 allocs/op
+Benchmark__Sereal_____Encode-8   	   10000	    111683 ns/op	   55270 B/op	    1035 allocs/op
+Benchmark__Msgpack____Decode-8   	   20000	     88023 ns/op	   33696 B/op	     671 allocs/op
+Benchmark__VMsgpack___Decode-8   	    5000	    301914 ns/op	   51504 B/op	    1717 allocs/op
+Benchmark__Msgp_______Decode-8   	   30000	     50168 ns/op	   30440 B/op	     616 allocs/op
+Benchmark__Binc_______Decode-8   	   10000	    102534 ns/op	   34216 B/op	     595 allocs/op
+Benchmark__Simple_____Decode-8   	   20000	     90866 ns/op	   33688 B/op	     671 allocs/op
+Benchmark__Cbor_______Decode-8   	   10000	    131086 ns/op	   34104 B/op	     697 allocs/op
+Benchmark__Json_______Decode-8   	   10000	    156032 ns/op	   42608 B/op	     736 allocs/op
+Benchmark__JsonIter___Decode-8   	   10000	    211163 ns/op	   60128 B/op	    2244 allocs/op
+Benchmark__Std_Json___Decode-8   	    3000	    552957 ns/op	   58320 B/op	    1967 allocs/op
+Benchmark__Easyjson___Decode-8   	   10000	    116978 ns/op	   41008 B/op	     695 allocs/op
 Benchmark__Ffjson_____Decode-8   	panic: runtime error: invalid memory address or nil pointer dereference
-Benchmark__JsonIter___Decode-8   	   20000	     62069 ns/op	   17912 B/op	     687 allocs/op
-Benchmark__Gob________Decode-8   	   10000	    161010 ns/op	   45690 B/op	    1121 allocs/op
-Benchmark__Bson_______Decode-8   	   10000	    103624 ns/op	   23336 B/op	    1296 allocs/op
-Benchmark__VMsgpack___Decode-8   	   20000	     95801 ns/op	   15384 B/op	     526 allocs/op
-Benchmark__Msgp_______Decode-8   	  100000	     14111 ns/op	    8800 B/op	     187 allocs/op
---- FAIL: Benchmark__Xdr________Decode error: xdr: xdr:encodeInterface: can't encode nil interface
---- FAIL: Benchmark__Sereal_____Decode error: sereal: reflect: call of reflect.Value.Set on zero Value
+Benchmark__Bson_______Decode-8   	    5000	    347238 ns/op	   77664 B/op	    4224 allocs/op
+Benchmark__Gob________Decode-8   	    5000	    271352 ns/op	   87485 B/op	    2028 allocs/op
+--- FAIL: Benchmark__Gcbor______Decode gcbor: can't read map into *codec.AnonInTestStrucIntf
+--- FAIL: Benchmark__Xdr________Encode xdr: xdr:encodeInterface: can't encode nil interface
+--- FAIL: Benchmark__Xdr________Decode xdr: xdr:encodeInterface: can't encode nil interface
+--- FAIL: Benchmark__Sereal_____Decode sereal: reflect: call of reflect.Value.Set on zero Value
 
 ```
 
+Selected results for a different run using benchcmp is below:
+
+
+```sh
+   go test -bench "_(Json|Cbor)" -benchmem -bd 2 -tags "x" > no-codecgen.bench.out.txt
+   go test -bench "_(Json|Cbor)" -benchmem -bd 2 -tags "x codecgen" > with-codecgen.bench.out.txt
+   benchcmp no-codecgen.bench.out.txt with-codecgen.bench.out.txt > benchcmp.out.txt
+```
+
+Results:
+```
+benchmark                          old ns/op     new ns/op     delta
+Benchmark__Cbor_______Encode-8     69672         37051         -46.82%
+Benchmark__Json_______Encode-8     115274        87775         -23.86%
+Benchmark__JsonIter___Encode-8     133558        133635        +0.06%
+Benchmark__Std_Json___Encode-8     165240        157007        -4.98%
+Benchmark__Cbor_______Decode-8     164396        131192        -20.20%
+Benchmark__Json_______Decode-8     207014        156589        -24.36%
+Benchmark__JsonIter___Decode-8     209418        208993        -0.20%
+Benchmark__Std_Json___Decode-8     553650        557783        +0.75%
+
+benchmark                          old allocs     new allocs     delta
+Benchmark__Cbor_______Encode-8     32             7              -78.12%
+Benchmark__Json_______Encode-8     45             20             -55.56%
+Benchmark__JsonIter___Encode-8     1013           1013           +0.00%
+Benchmark__Std_Json___Encode-8     560            560            +0.00%
+Benchmark__Cbor_______Decode-8     713            697            -2.24%
+Benchmark__Json_______Decode-8     756            736            -2.65%
+Benchmark__JsonIter___Decode-8     2244           2244           +0.00%
+Benchmark__Std_Json___Decode-8     1967           1967           +0.00%
+
+benchmark                          old bytes     new bytes     delta
+Benchmark__Cbor_______Encode-8     5529          2320          -58.04%
+Benchmark__Json_______Encode-8     6290          3072          -51.16%
+Benchmark__JsonIter___Encode-8     40496         40496         +0.00%
+Benchmark__Std_Json___Encode-8     65248         65248         +0.00%
+Benchmark__Cbor_______Decode-8     34384         34104         -0.81%
+Benchmark__Json_______Decode-8     42976         42608         -0.86%
+Benchmark__JsonIter___Decode-8     60128         60128         +0.00%
+Benchmark__Std_Json___Decode-8     58320         58320         +0.00%
+```
