@@ -7,8 +7,10 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 )
@@ -39,6 +41,10 @@ type benchChecker struct {
 	decodefn benchDecFn
 }
 
+func benchReinit() {
+	benchCheckers = nil
+}
+
 func benchPreInit() {
 	benchTs = newTestStruc(benchDepth, true, !testSkipIntf, benchMapStringKeyOnly)
 	approxSize = approxDataSize(reflect.ValueOf(benchTs)) * 3 / 2 // multiply by 1.5 to appease msgp, and prevent alloc
@@ -66,10 +72,9 @@ func benchPostInit() {
 }
 
 func runBenchInit() {
-	logT(nil, "..............................................")
+	// logT(nil, "..............................................")
 	logT(nil, "BENCHMARK INIT: %v", time.Now())
-	logT(nil, "To run full benchmark comparing encodings, "+
-		"use: \"go test -bench=.\"")
+	// logT(nil, "To run full benchmark comparing encodings, use: \"go test -bench=.\"")
 	logT(nil, "Benchmark: ")
 	logT(nil, "\tStruct recursive Depth:             %d", benchDepth)
 	if approxSize > 0 {
@@ -97,7 +102,19 @@ func fnBenchNewTs() interface{} {
 	// return new(TestStruc)
 }
 
+const benchCheckDoDeepEqual = false
+
+func benchRecoverPanic() {
+	if r := recover(); r != nil {
+		fmt.Printf("panic: %v\n", r)
+	}
+}
+
 func doBenchCheck(name string, encfn benchEncFn, decfn benchDecFn) {
+	// if benchUnscientificRes {
+	// 	logT(nil, "-------------- %s ----------------", name)
+	// }
+	defer benchRecoverPanic()
 	runtime.GC()
 	tnow := time.Now()
 	buf, err := encfn(benchTs, nil)
@@ -112,14 +129,25 @@ func doBenchCheck(name string, encfn benchEncFn, decfn benchDecFn) {
 		return
 	}
 	tnow = time.Now()
-	if err = decfn(buf, new(TestStruc)); err != nil {
+	var ts2 TestStruc
+	if err = decfn(buf, &ts2); err != nil {
 		logT(nil, "\t%10s: **** Error decoding into new TestStruc: %v", name, err)
 	}
 	decDur := time.Now().Sub(tnow)
-	logT(nil, "\t%10s: len: %d bytes, encode: %v, decode: %v\n", name, encLen, encDur, decDur)
+	logT(nil, "\t%10s: len: %d bytes,\t encode: %v,\t decode: %v\n", name, encLen, encDur, decDur)
+	if benchCheckDoDeepEqual {
+		if err = deepEqual(benchTs, ts2); err != nil {
+			logT(nil, "BenchVerify: Error comparing benchTs: %v\n--------\n%v\n--------\n%v",
+				err, benchTs, ts2)
+			if strings.Contains(name, "json") {
+				logT(nil, "\n\tDECODED FROM\n--------\n%s", buf)
+			}
+		}
+	}
 }
 
 func fnBenchmarkEncode(b *testing.B, encName string, ts interface{}, encfn benchEncFn) {
+	defer benchRecoverPanic()
 	testOnce.Do(testInitAll)
 	var err error
 	bs := make([]byte, 0, approxSize)
@@ -139,6 +167,7 @@ func fnBenchmarkEncode(b *testing.B, encName string, ts interface{}, encfn bench
 func fnBenchmarkDecode(b *testing.B, encName string, ts interface{},
 	encfn benchEncFn, decfn benchDecFn, newfn benchIntfFn,
 ) {
+	defer benchRecoverPanic()
 	testOnce.Do(testInitAll)
 	bs := make([]byte, 0, approxSize)
 	buf, err := encfn(ts, bs)
@@ -230,14 +259,22 @@ func fnGobEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
 }
 
 func fnGobDecodeFn(buf []byte, ts interface{}) error {
-	return gob.NewDecoder(bytes.NewBuffer(buf)).Decode(ts)
+	return gob.NewDecoder(bytes.NewReader(buf)).Decode(ts)
 }
 
 func fnStdJsonEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
+	if testUseIoEncDec {
+		buf := fnBenchmarkByteBuf(bsIn)
+		err := json.NewEncoder(buf).Encode(ts)
+		return buf.Bytes(), err
+	}
 	return json.Marshal(ts)
 }
 
 func fnStdJsonDecodeFn(buf []byte, ts interface{}) error {
+	if testUseIoEncDec {
+		return json.NewDecoder(bytes.NewReader(buf)).Decode(ts)
+	}
 	return json.Unmarshal(buf, ts)
 }
 
