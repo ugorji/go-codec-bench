@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"runtime"
 	"strings"
@@ -104,9 +103,9 @@ func fnBenchNewTs() interface{} {
 
 const benchCheckDoDeepEqual = false
 
-func benchRecoverPanic() {
+func benchRecoverPanic(t interface{}) {
 	if r := recover(); r != nil {
-		fmt.Printf("panic: %v\n", r)
+		logT(t, "panic: %v\n", r)
 	}
 }
 
@@ -114,7 +113,7 @@ func doBenchCheck(name string, encfn benchEncFn, decfn benchDecFn) {
 	// if benchUnscientificRes {
 	// 	logT(nil, "-------------- %s ----------------", name)
 	// }
-	defer benchRecoverPanic()
+	defer benchRecoverPanic(nil)
 	runtime.GC()
 	tnow := time.Now()
 	buf, err := encfn(benchTs, nil)
@@ -147,7 +146,7 @@ func doBenchCheck(name string, encfn benchEncFn, decfn benchDecFn) {
 }
 
 func fnBenchmarkEncode(b *testing.B, encName string, ts interface{}, encfn benchEncFn) {
-	defer benchRecoverPanic()
+	defer benchRecoverPanic(b)
 	testOnce.Do(testInitAll)
 	var err error
 	bs := make([]byte, 0, approxSize)
@@ -167,7 +166,7 @@ func fnBenchmarkEncode(b *testing.B, encName string, ts interface{}, encfn bench
 func fnBenchmarkDecode(b *testing.B, encName string, ts interface{},
 	encfn benchEncFn, decfn benchDecFn, newfn benchIntfFn,
 ) {
-	defer benchRecoverPanic()
+	defer benchRecoverPanic(b)
 	testOnce.Do(testInitAll)
 	bs := make([]byte, 0, approxSize)
 	buf, err := encfn(ts, bs)
@@ -229,11 +228,13 @@ func fnSimpleDecodeFn(buf []byte, ts interface{}) error {
 }
 
 func fnNoopEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
-	return benchFnCodecEncode(ts, bsIn, testNoopH)
+	return
+	// return benchFnCodecEncode(ts, bsIn, testNoopH)
 }
 
 func fnNoopDecodeFn(buf []byte, ts interface{}) error {
-	return benchFnCodecDecode(buf, ts, testNoopH)
+	return nil
+	// return benchFnCodecDecode(buf, ts, testNoopH)
 }
 
 func fnCborEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
@@ -281,7 +282,7 @@ func fnStdJsonDecodeFn(buf []byte, ts interface{}) error {
 // ----------- DECODE ------------------
 
 // Re-enable NoopHandle tests when fixed. TODO: Oct 16, 2015
-func __Benchmark__Noop_______Encode(b *testing.B) {
+func Benchmark__Noop_______Encode(b *testing.B) {
 	fnBenchmarkEncode(b, "noop", benchTs, fnNoopEncodeFn)
 }
 
@@ -315,7 +316,7 @@ func Benchmark__Gob________Encode(b *testing.B) {
 
 // ----------- DECODE ------------------
 
-func __Benchmark__Noop_______Decode(b *testing.B) {
+func Benchmark__Noop_______Decode(b *testing.B) {
 	fnBenchmarkDecode(b, "noop", benchTs, fnNoopEncodeFn, fnNoopDecodeFn, fnBenchNewTs)
 }
 
