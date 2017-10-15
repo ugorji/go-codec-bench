@@ -7,7 +7,6 @@ package codec
 
 import (
 	"bytes"
-	"errors"
 	"testing"
 
 	// gcbor "code.google.com/p/cbor/go"
@@ -15,9 +14,6 @@ import (
 	"github.com/Sereal/Sereal/Go/sereal"
 	"github.com/davecgh/go-xdr/xdr2"
 	"github.com/json-iterator/go"
-	"github.com/mailru/easyjson"
-	"github.com/pquerna/ffjson/ffjson"
-	"github.com/tinylib/msgp/msgp"
 	"gopkg.in/mgo.v2/bson"                     //"labix.org/v2/mgo/bson"
 	vmsgpack "gopkg.in/vmihailenco/msgpack.v2" //"github.com/vmihailenco/msgpack"
 )
@@ -48,9 +44,6 @@ func benchXPreInit() {
 		benchChecker{"json-iter", fnJsonIterEncodeFn, fnJsonIterDecodeFn},
 		benchChecker{"v-msgpack", fnVMsgpackEncodeFn, fnVMsgpackDecodeFn},
 		benchChecker{"bson", fnBsonEncodeFn, fnBsonDecodeFn},
-		benchChecker{"msgp", fnMsgpEncodeFn, fnMsgpDecodeFn},
-		benchChecker{"easyjson", fnEasyjsonEncodeFn, fnEasyjsonDecodeFn},
-		benchChecker{"ffjson", fnFfjsonEncodeFn, fnFfjsonDecodeFn},
 		// place codecs with issues at the end, so as not to make results too ugly
 		benchChecker{"gcbor", fnGcborEncodeFn, fnGcborDecodeFn},
 		benchChecker{"xdr", fnXdrEncodeFn, fnXdrDecodeFn},
@@ -90,40 +83,6 @@ func fnJsonIterDecodeFn(buf []byte, ts interface{}) error {
 	return jsoniter.Unmarshal(buf, ts)
 }
 
-func fnEasyjsonEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
-	if _, ok := ts.(easyjson.Marshaler); !ok {
-		return nil, errors.New("easyjson: input is not a easyjson.Marshaler")
-	}
-	if testUseIoEncDec {
-		buf := new(bytes.Buffer)
-		_, err := easyjson.MarshalToWriter(ts.(easyjson.Marshaler), buf)
-		return buf.Bytes(), err
-	}
-	return easyjson.Marshal(ts.(easyjson.Marshaler))
-	// return ts.(json.Marshaler).MarshalJSON()
-}
-
-func fnEasyjsonDecodeFn(buf []byte, ts interface{}) error {
-	if _, ok := ts.(easyjson.Unmarshaler); !ok {
-		return errors.New("easyjson: input is not a easyjson.Unmarshaler")
-	}
-	if testUseIoEncDec {
-		return easyjson.UnmarshalFromReader(bytes.NewReader(buf), ts.(easyjson.Unmarshaler))
-	}
-	return easyjson.Unmarshal(buf, ts.(easyjson.Unmarshaler))
-	// return ts.(json.Unmarshaler).UnmarshalJSON(buf)
-}
-
-func fnFfjsonEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
-	return ffjson.Marshal(ts)
-	// return ts.(json.Marshaler).MarshalJSON()
-}
-
-func fnFfjsonDecodeFn(buf []byte, ts interface{}) error {
-	return ffjson.Unmarshal(buf, ts)
-	// return ts.(json.Unmarshaler).UnmarshalJSON(buf)
-}
-
 func fnXdrEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
 	buf := fnBenchmarkByteBuf(bsIn)
 	_, err := xdr.Marshal(buf, ts)
@@ -141,30 +100,6 @@ func fnSerealEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
 
 func fnSerealDecodeFn(buf []byte, ts interface{}) error {
 	return sereal.Unmarshal(buf, ts)
-}
-
-func fnMsgpEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
-	if _, ok := ts.(msgp.Encodable); !ok {
-		return nil, errors.New("msgp: input is not a msgp.Encodable")
-	}
-	if testUseIoEncDec {
-		buf := fnBenchmarkByteBuf(bsIn)
-		err := ts.(msgp.Encodable).EncodeMsg(msgp.NewWriter(buf))
-		return buf.Bytes(), err
-	}
-	return ts.(msgp.Marshaler).MarshalMsg(bsIn[:0]) // msgp appends to slice.
-}
-
-func fnMsgpDecodeFn(buf []byte, ts interface{}) (err error) {
-	if _, ok := ts.(msgp.Decodable); !ok {
-		return errors.New("msgp: input is not a msgp.Decodable")
-	}
-	if testUseIoEncDec {
-		err = ts.(msgp.Decodable).DecodeMsg(msgp.NewReader(bytes.NewReader(buf)))
-		return
-	}
-	_, err = ts.(msgp.Unmarshaler).UnmarshalMsg(buf)
-	return
 }
 
 func fnGcborEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
@@ -201,31 +136,7 @@ func Benchmark__VMsgpack___Decode(b *testing.B) {
 	fnBenchmarkDecode(b, "v-msgpack", benchTs, fnVMsgpackEncodeFn, fnVMsgpackDecodeFn, fnBenchNewTs)
 }
 
-func Benchmark__Msgp_______Encode(b *testing.B) {
-	fnBenchmarkEncode(b, "msgp", benchTs, fnMsgpEncodeFn)
-}
-
-func Benchmark__Msgp_______Decode(b *testing.B) {
-	fnBenchmarkDecode(b, "msgp", benchTs, fnMsgpEncodeFn, fnMsgpDecodeFn, fnBenchNewTs)
-}
-
 // Place codecs with issues at the bottom, so as not to make results look too ugly.
-
-func Benchmark__Easyjson___Encode(b *testing.B) {
-	fnBenchmarkEncode(b, "easyjson", benchTs, fnEasyjsonEncodeFn)
-}
-
-func Benchmark__Easyjson___Decode(b *testing.B) {
-	fnBenchmarkDecode(b, "easyjson", benchTs, fnEasyjsonEncodeFn, fnEasyjsonDecodeFn, fnBenchNewTs)
-}
-
-func Benchmark__Ffjson_____Encode(b *testing.B) {
-	fnBenchmarkEncode(b, "ffjson", benchTs, fnFfjsonEncodeFn)
-}
-
-func Benchmark__Ffjson_____Decode(b *testing.B) {
-	fnBenchmarkDecode(b, "ffjson", benchTs, fnFfjsonEncodeFn, fnFfjsonDecodeFn, fnBenchNewTs)
-}
 
 func Benchmark__Gcbor______Encode(b *testing.B) {
 	fnBenchmarkEncode(b, "gcbor", benchTs, fnGcborEncodeFn)

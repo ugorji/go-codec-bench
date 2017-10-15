@@ -7,11 +7,16 @@ package codec
 
 import "testing"
 
+import . "github.com/ugorji/go/codec"
+
 func benchmarkSuite(t *testing.B, f func(t *testing.B)) {
 	// find . -name "*_test.go" | xargs grep -e 'flag.' | cut -d '&' -f 2 | cut -d ',' -f 1 | grep -e '^bench'
 
 	testReinit() // so flag.Parse() is called first, and never called again
 	benchReinit()
+
+	testDecodeOptions = DecodeOptions{}
+	testEncodeOptions = EncodeOptions{}
 
 	testUseIoEncDec = false
 	testUseReset = false
@@ -36,9 +41,13 @@ func benchmarkSuite(t *testing.B, f func(t *testing.B)) {
 	t.Run("options-false", f)
 
 	testUseIoEncDec = true
+	testDecodeOptions.ReaderBufferSize = 128
+	testEncodeOptions.WriterBufferSize = 128
 	testReinit()
 	benchReinit()
 	t.Run("use-io-not-bytes", f)
+	testDecodeOptions.ReaderBufferSize = 0
+	testEncodeOptions.WriterBufferSize = 0
 	testUseIoEncDec = false
 
 	testUseReset = true

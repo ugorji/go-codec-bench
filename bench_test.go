@@ -45,7 +45,7 @@ func benchReinit() {
 }
 
 func benchPreInit() {
-	benchTs = newTestStruc(benchDepth, true, !testSkipIntf, benchMapStringKeyOnly)
+	benchTs = newTestStruc(benchDepth, testNumRepeatString, true, !testSkipIntf, benchMapStringKeyOnly)
 	approxSize = approxDataSize(reflect.ValueOf(benchTs)) * 3 / 2 // multiply by 1.5 to appease msgp, and prevent alloc
 	// bytesLen := 1024 * 4 * (benchDepth + 1) * (benchDepth + 1)
 	// if bytesLen < approxSize {
