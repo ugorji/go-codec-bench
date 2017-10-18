@@ -18,10 +18,9 @@ func benchmarkSuite(t *testing.B, f func(t *testing.B)) {
 	testDecodeOptions = DecodeOptions{}
 	testEncodeOptions = EncodeOptions{}
 
-	testUseIoEncDec = false
+	testUseIoEncDec = -1
 	testUseReset = false
 	testInternStr = false
-	testJsonPreferFloat = false
 
 	benchMapStringKeyOnly = false
 	benchInitDebug = false
@@ -40,15 +39,11 @@ func benchmarkSuite(t *testing.B, f func(t *testing.B)) {
 	benchReinit()
 	t.Run("options-false", f)
 
-	testUseIoEncDec = true
-	testDecodeOptions.ReaderBufferSize = 128
-	testEncodeOptions.WriterBufferSize = 128
+	testUseIoEncDec = 128
 	testReinit()
 	benchReinit()
 	t.Run("use-io-not-bytes", f)
-	testDecodeOptions.ReaderBufferSize = 0
-	testEncodeOptions.WriterBufferSize = 0
-	testUseIoEncDec = false
+	testUseIoEncDec = -1
 
 	testUseReset = true
 	testReinit()
@@ -62,13 +57,11 @@ func benchmarkSuite(t *testing.B, f func(t *testing.B)) {
 	t.Run("intern-strings", f)
 	testInternStr = false
 
-	// testJsonPreferFloat = true
 	benchVerify = true
 	testReinit()
 	benchReinit()
 	t.Run("verify-on-decode", f)
 	benchVerify = false
-	// testJsonPreferFloat = false
 }
 
 /*

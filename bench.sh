@@ -1,5 +1,20 @@
 #!/bin/bash
 _bench() {
+    if [[ "$zquick" == "1" ]]; then
+        # echo "RUNNING IN QUICK MODE"
+        for k in En De; do
+            for j in 1 2; do
+                for y in "" "-ti=1024"; do
+                    for i in $(seq 1 1); do
+                        echo ">>>>>> go test -bd $j -run Melody -benchmem -benchtime ${j}s -tags x  -bench _(Json).*$k $y"
+                        go test -bd $j -run Melody -benchmem -benchtime "${j}s" -tags x  -bench "_(Json).*$k" "$y"
+                    done
+                done
+            done
+        done
+        return
+    fi
+    
     local t="alltests"
     local s="CodecSuite"
     if [[ "x$1" != "x" ]]; then

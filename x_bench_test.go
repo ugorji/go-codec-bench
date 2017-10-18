@@ -68,7 +68,7 @@ func fnBsonDecodeFn(buf []byte, ts interface{}) error {
 }
 
 func fnJsonIterEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
-	if testUseIoEncDec {
+	if testUseIoEncDec >= 0 {
 		buf := new(bytes.Buffer)
 		err := jsoniter.NewEncoder(buf).Encode(ts)
 		return buf.Bytes(), err
@@ -77,7 +77,7 @@ func fnJsonIterEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
 }
 
 func fnJsonIterDecodeFn(buf []byte, ts interface{}) error {
-	if testUseIoEncDec {
+	if testUseIoEncDec >= 0 {
 		return jsoniter.NewDecoder(bytes.NewReader(buf)).Decode(ts)
 	}
 	return jsoniter.Unmarshal(buf, ts)
