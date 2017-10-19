@@ -58,3 +58,22 @@ func benchmarkCodecXGroup(t *testing.B) {
 
 func BenchmarkXSuite(t *testing.B)      { benchmarkSuite(t, benchmarkXGroup) }
 func BenchmarkCodecXSuite(t *testing.B) { benchmarkSuite(t, benchmarkCodecXGroup) }
+
+func benchmarkJsonEncodeGroup(t *testing.B) {
+	logT(nil, "\n-------------------------------\n")
+	t.Run("Benchmark__Json_______Encode", Benchmark__Json_______Encode)
+	t.Run("Benchmark__Std_Json___Encode", Benchmark__Std_Json___Encode)
+	t.Run("Benchmark__JsonIter___Encode", Benchmark__JsonIter___Encode)
+}
+
+func benchmarkJsonDecodeGroup(t *testing.B) {
+	logT(nil, "\n-------------------------------\n")
+	t.Run("Benchmark__Json_______Decode", Benchmark__Json_______Decode)
+	t.Run("Benchmark__Std_Json___Decode", Benchmark__Std_Json___Decode)
+	t.Run("Benchmark__JsonIter___Decode", Benchmark__JsonIter___Decode)
+}
+
+func BenchmarkCodecQuickSuite(t *testing.B) {
+	benchmarkQuickSuite(t, benchmarkJsonEncodeGroup)
+	benchmarkQuickSuite(t, benchmarkJsonDecodeGroup)
+}

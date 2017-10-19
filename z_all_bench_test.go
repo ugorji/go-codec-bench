@@ -1,4 +1,4 @@
-// +build alltests
+// +build alltests codecgen
 // +build go1.7
 
 package codec
@@ -9,6 +9,19 @@ import "testing"
 
 import . "github.com/ugorji/go/codec"
 
+func benchmarkGroupReset() {
+	testUseIoEncDec = -1
+	testUseReset = false
+	testInternStr = false
+
+	benchMapStringKeyOnly = false
+	benchInitDebug = false
+	benchVerify = false
+	benchDepth = 2
+	benchDoInitBench = false
+	benchUnscientificRes = false
+}
+
 func benchmarkSuite(t *testing.B, f func(t *testing.B)) {
 	// find . -name "*_test.go" | xargs grep -e 'flag.' | cut -d '&' -f 2 | cut -d ',' -f 1 | grep -e '^bench'
 
@@ -18,14 +31,8 @@ func benchmarkSuite(t *testing.B, f func(t *testing.B)) {
 	testDecodeOptions = DecodeOptions{}
 	testEncodeOptions = EncodeOptions{}
 
-	testUseIoEncDec = -1
-	testUseReset = false
-	testInternStr = false
+	benchmarkGroupReset()
 
-	benchMapStringKeyOnly = false
-	benchInitDebug = false
-	benchVerify = false
-	benchDepth = 2
 	benchDoInitBench = true
 	benchUnscientificRes = true
 	testReinit()
@@ -64,6 +71,38 @@ func benchmarkSuite(t *testing.B, f func(t *testing.B)) {
 	benchVerify = false
 }
 
+func benchmarkQuickSuite(t *testing.B, f func(t *testing.B)) {
+	benchmarkGroupReset()
+
+	// bd=1 2 | ti=-1, 1024 |
+
+	testUseIoEncDec = -1
+	benchDepth = 1
+	testReinit()
+	benchReinit()
+	t.Run("json-all-bd1", f)
+
+	testUseIoEncDec = -1
+	benchDepth = 4
+	testReinit()
+	benchReinit()
+	t.Run("json-all-bd4", f)
+
+	testUseIoEncDec = 1024
+	benchDepth = 1
+	testReinit()
+	benchReinit()
+	t.Run("json-all-bd1-buf1024", f)
+
+	testUseIoEncDec = 1024
+	benchDepth = 4
+	testReinit()
+	benchReinit()
+	t.Run("json-all-bd4-buf2014", f)
+
+	benchmarkGroupReset()
+}
+
 /*
 z='bench_test.go'
 find . -name "$z" | xargs grep -e '^func Benchmark.*Encode' | \
@@ -95,3 +134,12 @@ func benchmarkCodecGroup(t *testing.B) {
 }
 
 func BenchmarkCodecSuite(t *testing.B) { benchmarkSuite(t, benchmarkCodecGroup) }
+
+func benchmarkJsonEncodeDecodeGroup(t *testing.B) {
+	t.Run("Benchmark__Json_______Encode", Benchmark__Json_______Encode)
+	t.Run("Benchmark__Json_______Decode", Benchmark__Json_______Decode)
+}
+
+func BenchmarkCodecQuickJsonSuite(t *testing.B) {
+	benchmarkQuickSuite(t, benchmarkJsonEncodeDecodeGroup)
+}
