@@ -204,53 +204,53 @@ func fnBenchmarkDecode(b *testing.B, encName string, ts interface{},
 // ------------ tests below
 
 func fnMsgpackEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
-	return benchFnCodecEncode(ts, bsIn, testMsgpackH)
+	return sTestCodecEncode(ts, bsIn, fnBenchmarkByteBuf, testMsgpackH, &testMsgpackH.BasicHandle)
 }
 
 func fnMsgpackDecodeFn(buf []byte, ts interface{}) error {
-	return benchFnCodecDecode(buf, ts, testMsgpackH)
+	return sTestCodecDecode(buf, ts, testMsgpackH, &testMsgpackH.BasicHandle)
 }
 
 func fnBincEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
-	return benchFnCodecEncode(ts, bsIn, testBincH)
+	return sTestCodecEncode(ts, bsIn, fnBenchmarkByteBuf, testBincH, &testBincH.BasicHandle)
 }
 
 func fnBincDecodeFn(buf []byte, ts interface{}) error {
-	return benchFnCodecDecode(buf, ts, testBincH)
+	return sTestCodecDecode(buf, ts, testBincH, &testBincH.BasicHandle)
 }
 
 func fnSimpleEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
-	return benchFnCodecEncode(ts, bsIn, testSimpleH)
+	return sTestCodecEncode(ts, bsIn, fnBenchmarkByteBuf, testSimpleH, &testSimpleH.BasicHandle)
 }
 
 func fnSimpleDecodeFn(buf []byte, ts interface{}) error {
-	return benchFnCodecDecode(buf, ts, testSimpleH)
+	return sTestCodecDecode(buf, ts, testSimpleH, &testSimpleH.BasicHandle)
 }
 
 func fnNoopEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
 	return
-	// return benchFnCodecEncode(ts, bsIn, testNoopH)
+	// return sTestCodecEncode(ts, bsIn, fnBenchmarkByteBuf, testNoopH, &testNoopH.BasicHandle)
 }
 
 func fnNoopDecodeFn(buf []byte, ts interface{}) error {
 	return nil
-	// return benchFnCodecDecode(buf, ts, testNoopH)
+	// return sTestCodecDecode(buf, ts, testNoopH, &testNoopH.BasicHandle)
 }
 
 func fnCborEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
-	return benchFnCodecEncode(ts, bsIn, testCborH)
+	return sTestCodecEncode(ts, bsIn, fnBenchmarkByteBuf, testCborH, &testCborH.BasicHandle)
 }
 
 func fnCborDecodeFn(buf []byte, ts interface{}) error {
-	return benchFnCodecDecode(buf, ts, testCborH)
+	return sTestCodecDecode(buf, ts, testCborH, &testCborH.BasicHandle)
 }
 
 func fnJsonEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
-	return benchFnCodecEncode(ts, bsIn, testJsonH)
+	return sTestCodecEncode(ts, bsIn, fnBenchmarkByteBuf, testJsonH, &testJsonH.BasicHandle)
 }
 
 func fnJsonDecodeFn(buf []byte, ts interface{}) error {
-	return benchFnCodecDecode(buf, ts, testJsonH)
+	return sTestCodecDecode(buf, ts, testJsonH, &testJsonH.BasicHandle)
 }
 
 func fnGobEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {

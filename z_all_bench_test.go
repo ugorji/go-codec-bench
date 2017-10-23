@@ -140,6 +140,16 @@ func benchmarkJsonEncodeDecodeGroup(t *testing.B) {
 	t.Run("Benchmark__Json_______Decode", Benchmark__Json_______Decode)
 }
 
+func benchmarkJsonEncodeGroup(t *testing.B) {
+	t.Run("Benchmark__Json_______Encode", Benchmark__Json_______Encode)
+}
+
+func benchmarkJsonDecodeGroup(t *testing.B) {
+	t.Run("Benchmark__Json_______Decode", Benchmark__Json_______Decode)
+}
+
 func BenchmarkCodecQuickJsonSuite(t *testing.B) {
-	benchmarkQuickSuite(t, benchmarkJsonEncodeDecodeGroup)
+	// benchmarkQuickSuite(t, benchmarkJsonEncodeDecodeGroup)
+	benchmarkQuickSuite(t, benchmarkJsonEncodeGroup)
+	benchmarkQuickSuite(t, benchmarkJsonDecodeGroup)
 }
