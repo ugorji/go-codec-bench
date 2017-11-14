@@ -98,7 +98,7 @@ func benchmarkQuickSuite(t *testing.B, f func(t *testing.B)) {
 	benchDepth = 4
 	testReinit()
 	benchReinit()
-	t.Run("json-all-bd4-buf2014", f)
+	t.Run("json-all-bd4-buf1024-4", f)
 
 	benchmarkGroupReset()
 }
