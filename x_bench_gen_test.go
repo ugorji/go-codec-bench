@@ -41,26 +41,28 @@ func benchXGenPreInit() {
 }
 
 func fnEasyjsonEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
-	if _, ok := ts.(easyjson.Marshaler); !ok {
+	ts2, ok := ts.(easyjson.Marshaler)
+	if !ok {
 		return nil, errors.New("easyjson: input is not a easyjson.Marshaler")
 	}
 	if testUseIoEncDec >= 0 {
 		buf := new(bytes.Buffer)
-		_, err := easyjson.MarshalToWriter(ts.(easyjson.Marshaler), buf)
+		_, err := easyjson.MarshalToWriter(ts2, buf)
 		return buf.Bytes(), err
 	}
-	return easyjson.Marshal(ts.(easyjson.Marshaler))
+	return easyjson.Marshal(ts2)
 	// return ts.(json.Marshaler).MarshalJSON()
 }
 
 func fnEasyjsonDecodeFn(buf []byte, ts interface{}) error {
-	if _, ok := ts.(easyjson.Unmarshaler); !ok {
+	ts2, ok := ts.(easyjson.Unmarshaler)
+	if !ok {
 		return errors.New("easyjson: input is not a easyjson.Unmarshaler")
 	}
 	if testUseIoEncDec >= 0 {
-		return easyjson.UnmarshalFromReader(bytes.NewReader(buf), ts.(easyjson.Unmarshaler))
+		return easyjson.UnmarshalFromReader(bytes.NewReader(buf), ts2)
 	}
-	return easyjson.Unmarshal(buf, ts.(easyjson.Unmarshaler))
+	return easyjson.Unmarshal(buf, ts2)
 	// return ts.(json.Unmarshaler).UnmarshalJSON(buf)
 }
 

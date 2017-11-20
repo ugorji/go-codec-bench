@@ -16,7 +16,7 @@ func benchmarkGroupReset() {
 
 	benchMapStringKeyOnly = false
 	benchInitDebug = false
-	benchVerify = false
+	// benchVerify = false
 	benchDepth = 2
 	benchDoInitBench = false
 	benchUnscientificRes = false
@@ -64,11 +64,12 @@ func benchmarkSuite(t *testing.B, f func(t *testing.B)) {
 	t.Run("intern-strings", f)
 	testInternStr = false
 
-	benchVerify = true
-	testReinit()
-	benchReinit()
-	t.Run("verify-on-decode", f)
-	benchVerify = false
+	// benchVerify is kinda lame - serves no real purpose.
+	// benchVerify = true
+	// testReinit()
+	// benchReinit()
+	// t.Run("verify-on-decode", f)
+	// benchVerify = false
 }
 
 func benchmarkQuickSuite(t *testing.B, f func(t *testing.B)) {

@@ -9,8 +9,7 @@ import (
 	"bytes"
 	"testing"
 
-	// gcbor "code.google.com/p/cbor/go"
-	gcbor "bitbucket.org/bodhisnarkva/cbor/go"
+	gcbor "bitbucket.org/bodhisnarkva/cbor/go" // gcbor "code.google.com/p/cbor/go"
 	"github.com/Sereal/Sereal/Go/sereal"
 	"github.com/davecgh/go-xdr/xdr2"
 	"github.com/json-iterator/go"
@@ -45,7 +44,7 @@ func benchXPreInit() {
 		benchChecker{"v-msgpack", fnVMsgpackEncodeFn, fnVMsgpackDecodeFn},
 		benchChecker{"bson", fnBsonEncodeFn, fnBsonDecodeFn},
 		// place codecs with issues at the end, so as not to make results too ugly
-		benchChecker{"gcbor", fnGcborEncodeFn, fnGcborDecodeFn},
+		benchChecker{"gcbor", fnGcborEncodeFn, fnGcborDecodeFn}, // this logs fat ugly message, but we log.SetOutput(ioutil.Discard)
 		benchChecker{"xdr", fnXdrEncodeFn, fnXdrDecodeFn},
 		benchChecker{"sereal", fnSerealEncodeFn, fnSerealDecodeFn},
 	)
@@ -120,6 +119,8 @@ func Benchmark__JsonIter___Decode(b *testing.B) {
 	fnBenchmarkDecode(b, "jsoniter", benchTs, fnJsonIterEncodeFn, fnJsonIterDecodeFn, fnBenchNewTs)
 }
 
+// Place codecs with issues at the bottom, so as not to make results look too ugly.
+
 func Benchmark__Bson_______Encode(b *testing.B) {
 	fnBenchmarkEncode(b, "bson", benchTs, fnBsonEncodeFn)
 }
@@ -135,8 +136,6 @@ func Benchmark__VMsgpack___Encode(b *testing.B) {
 func Benchmark__VMsgpack___Decode(b *testing.B) {
 	fnBenchmarkDecode(b, "v-msgpack", benchTs, fnVMsgpackEncodeFn, fnVMsgpackDecodeFn, fnBenchNewTs)
 }
-
-// Place codecs with issues at the bottom, so as not to make results look too ugly.
 
 func Benchmark__Gcbor______Encode(b *testing.B) {
 	fnBenchmarkEncode(b, "gcbor", benchTs, fnGcborEncodeFn)

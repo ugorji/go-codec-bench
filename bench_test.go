@@ -101,7 +101,7 @@ func fnBenchNewTs() interface{} {
 	// return new(TestStruc)
 }
 
-const benchCheckDoDeepEqual = false
+// const benchCheckDoDeepEqual = false
 
 func benchRecoverPanic(t interface{}) {
 	if r := recover(); r != nil {
@@ -134,7 +134,8 @@ func doBenchCheck(name string, encfn benchEncFn, decfn benchDecFn) {
 	}
 	decDur := time.Now().Sub(tnow)
 	logT(nil, "\t%10s: len: %d bytes,\t encode: %v,\t decode: %v\n", name, encLen, encDur, decDur)
-	if benchCheckDoDeepEqual {
+	// if benchCheckDoDeepEqual {
+	if benchVerify {
 		if err = deepEqual(benchTs, ts2); err != nil {
 			logT(nil, "BenchVerify: Error comparing benchTs: %v\n--------\n%v\n--------\n%v",
 				err, benchTs, ts2)
@@ -174,7 +175,7 @@ func fnBenchmarkDecode(b *testing.B, encName string, ts interface{},
 		logT(b, "Error encoding benchTs: %s: %v", encName, err)
 		b.FailNow()
 	}
-	if benchVerify {
+	if false && benchVerify { // do not do benchVerify during decode
 		// ts2 := newfn()
 		ts1 := ts.(*TestStruc)
 		ts2 := new(TestStruc)

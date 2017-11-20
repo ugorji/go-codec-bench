@@ -18,7 +18,6 @@ package codec
 import (
 	"math"
 	"strings"
-	"time"
 )
 
 type wrapSliceUint64 []uint64
@@ -54,13 +53,6 @@ type AnonInTestStruc struct {
 	AUi64sliceN []uint64
 	AMSU16N     map[string]uint16
 	AMSU16E     map[string]uint16
-}
-
-type AnonInTestStrucIntf struct {
-	Islice []interface{}
-	Ms     map[string]interface{}
-	Nintf  interface{} //don't set this, so we can test for nil
-	T      time.Time
 }
 
 type testSimpleFields struct {
@@ -100,15 +92,13 @@ type testSimpleFields struct {
 	// TODO: test these separately, specifically for reflection and codecgen.
 	// Unfortunately, ffjson doesn't support these. Its compilation even fails.
 
-	Ui64array       [4]uint64
-	Ui64slicearray  []*[4]uint64
 	WrapSliceInt64  wrapSliceUint64
 	WrapSliceString wrapSliceString
 
 	Msi64 map[string]int64
 }
 
-type testStrucCommon struct {
+type TestStrucCommon struct {
 	S string
 
 	I64 int64
@@ -145,8 +135,6 @@ type testStrucCommon struct {
 	// TODO: test these separately, specifically for reflection and codecgen.
 	// Unfortunately, ffjson doesn't support these. Its compilation even fails.
 
-	Ui64array       [4]uint64
-	Ui64slicearray  []*[4]uint64
 	WrapSliceInt64  wrapSliceUint64
 	WrapSliceString wrapSliceString
 
@@ -157,11 +145,6 @@ type testStrucCommon struct {
 	AnonInTestStruc
 
 	NotAnon AnonInTestStruc
-
-	// make this a ptr, so that it could be set or not.
-	// for comparison (e.g. with msgp), give it a struct tag (so it is not inlined),
-	// make this one omitempty (so it is excluded if nil).
-	*AnonInTestStrucIntf `json:",omitempty"`
 
 	// R          Raw // Testing Raw must be explicitly turned on, so use standalone test
 	// Rext RawExt // Testing RawExt is tricky, so use standalone test
@@ -174,7 +157,7 @@ type testStrucCommon struct {
 type TestStruc struct {
 	// _struct struct{} `json:",omitempty"` //set omitempty for every field
 
-	testStrucCommon
+	TestStrucCommon
 
 	Mtsptr     map[string]*TestStruc
 	Mts        map[string]TestStruc
@@ -182,10 +165,10 @@ type TestStruc struct {
 	Nteststruc *TestStruc
 }
 
-var testStrucTime = time.Date(2012, 2, 2, 2, 2, 2, 2000, time.UTC).UTC()
-
-func populateTestStrucCommon(ts *testStrucCommon, n int, bench, useInterface, useStringKeyOnly bool) {
+func populateTestStrucCommon(ts *TestStrucCommon, n int, bench, useInterface, useStringKeyOnly bool) {
 	var i64a, i64b, i64c, i64d int64 = 64, 6464, 646464, 64646464
+
+	// if bench, do not use uint64 values > math.MaxInt64, as bson, etc cannot decode them
 
 	var a = AnonInTestStruc{
 		// There's more leeway in altering this.
@@ -223,7 +206,6 @@ func populateTestStrucCommon(ts *testStrucCommon, n int, bench, useInterface, us
 			math.MaxUint8, math.MaxUint8 + 4, math.MaxUint8 - 4,
 			math.MaxUint16, math.MaxUint16 + 4, math.MaxUint16 - 4,
 			math.MaxUint32, math.MaxUint32 + 4, math.MaxUint32 - 4,
-			math.MaxUint64, math.MaxUint64 - 4,
 		},
 		AMSU16: map[string]uint16{strRpt(n, "1"): 1, strRpt(n, "22"): 2, strRpt(n, "333"): 3, strRpt(n, "4444"): 4},
 
@@ -268,7 +250,10 @@ func populateTestStrucCommon(ts *testStrucCommon, n int, bench, useInterface, us
 		AMSU16E:     map[string]uint16{},
 	}
 
-	*ts = testStrucCommon{
+	if !bench {
+		a.AUi64slice = append(a.AUi64slice, math.MaxUint64, math.MaxUint64-4)
+	}
+	*ts = TestStrucCommon{
 		S: strRpt(n, `some really really cool names that are nigerian and american like "ugorji melody nwoke" - get it? `),
 
 		// set the numbers close to the limits
@@ -305,8 +290,6 @@ func populateTestStrucCommon(ts *testStrucCommon, n int, bench, useInterface, us
 			strRpt(n, "two"):       2,
 			strRpt(n, "\"three\""): 3,
 		},
-
-		Ui64array: [4]uint64{4, 16, 64, 256},
 
 		WrapSliceInt64:  []uint64{4, 16, 64, 256},
 		WrapSliceString: []string{strRpt(n, "4"), strRpt(n, "16"), strRpt(n, "64"), strRpt(n, "256")},
@@ -362,8 +345,6 @@ func populateTestStrucCommon(ts *testStrucCommon, n int, bench, useInterface, us
 				strRpt(n, "\"three\""): 3,
 			},
 
-			Ui64array: [4]uint64{4, 16, 64, 256},
-
 			WrapSliceInt64:  []uint64{4, 16, 64, 256},
 			WrapSliceString: []string{strRpt(n, "4"), strRpt(n, "16"), strRpt(n, "64"), strRpt(n, "256")},
 		},
@@ -372,17 +353,9 @@ func populateTestStrucCommon(ts *testStrucCommon, n int, bench, useInterface, us
 		NotAnon:         a,
 	}
 
-	ts.Ui64slicearray = []*[4]uint64{&ts.Ui64array, &ts.Ui64array}
-
-	if useInterface {
-		ts.AnonInTestStrucIntf = &AnonInTestStrucIntf{
-			Islice: []interface{}{strRpt(n, "true"), true, strRpt(n, "no"), false, uint64(288), float64(0.4)},
-			Ms: map[string]interface{}{
-				strRpt(n, "true"):     strRpt(n, "true"),
-				strRpt(n, "int64(9)"): false,
-			},
-			T: testStrucTime,
-		}
+	if bench {
+		ts.Ui64 = math.MaxInt64 * 2 / 3
+		ts.Simplef.Ui64 = ts.Ui64
 	}
 
 	//For benchmarks, some things will not work.
@@ -403,7 +376,7 @@ func populateTestStrucCommon(ts *testStrucCommon, n int, bench, useInterface, us
 
 func newTestStruc(depth, n int, bench, useInterface, useStringKeyOnly bool) (ts *TestStruc) {
 	ts = &TestStruc{}
-	populateTestStrucCommon(&ts.testStrucCommon, n, bench, useInterface, useStringKeyOnly)
+	populateTestStrucCommon(&ts.TestStrucCommon, n, bench, useInterface, useStringKeyOnly)
 	if depth > 0 {
 		depth--
 		if ts.Mtsptr == nil {

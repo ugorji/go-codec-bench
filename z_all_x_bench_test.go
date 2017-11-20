@@ -8,21 +8,28 @@ package codec
 
 import "testing"
 
+// Note: The following cannot parse TestStruc effectively,
+// even with changes to remove arrays and minimize integer size to fit into int64 space.
+//
+// So we exclude them, listed below:
+// encode: gcbor, xdr
+// decode: gcbor, vmsgpack, xdr, sereal
+
 func benchmarkXGroup(t *testing.B) {
 	logT(nil, "\n-------------------------------\n")
 	t.Run("Benchmark__JsonIter___Encode", Benchmark__JsonIter___Encode)
 	t.Run("Benchmark__Bson_______Encode", Benchmark__Bson_______Encode)
 	t.Run("Benchmark__VMsgpack___Encode", Benchmark__VMsgpack___Encode)
-	t.Run("Benchmark__Gcbor______Encode", Benchmark__Gcbor______Encode)
-	t.Run("Benchmark__Xdr________Encode", Benchmark__Xdr________Encode)
+	// t.Run("Benchmark__Gcbor______Encode", Benchmark__Gcbor______Encode)
+	// t.Run("Benchmark__Xdr________Encode", Benchmark__Xdr________Encode)
 	t.Run("Benchmark__Sereal_____Encode", Benchmark__Sereal_____Encode)
 
 	t.Run("Benchmark__JsonIter___Decode", Benchmark__JsonIter___Decode)
 	t.Run("Benchmark__Bson_______Decode", Benchmark__Bson_______Decode)
-	t.Run("Benchmark__VMsgpack___Decode", Benchmark__VMsgpack___Decode)
-	t.Run("Benchmark__Gcbor______Decode", Benchmark__Gcbor______Decode)
-	t.Run("Benchmark__Xdr________Decode", Benchmark__Xdr________Decode)
-	t.Run("Benchmark__Sereal_____Decode", Benchmark__Sereal_____Decode)
+	// t.Run("Benchmark__VMsgpack___Decode", Benchmark__VMsgpack___Decode)
+	// t.Run("Benchmark__Gcbor______Decode", Benchmark__Gcbor______Decode)
+	// t.Run("Benchmark__Xdr________Decode", Benchmark__Xdr________Decode)
+	// t.Run("Benchmark__Sereal_____Decode", Benchmark__Sereal_____Decode)
 }
 
 func benchmarkCodecXGroup(t *testing.B) {
@@ -37,8 +44,8 @@ func benchmarkCodecXGroup(t *testing.B) {
 	t.Run("Benchmark__JsonIter___Encode", Benchmark__JsonIter___Encode)
 	t.Run("Benchmark__Bson_______Encode", Benchmark__Bson_______Encode)
 	t.Run("Benchmark__VMsgpack___Encode", Benchmark__VMsgpack___Encode)
-	t.Run("Benchmark__Gcbor______Encode", Benchmark__Gcbor______Encode)
-	t.Run("Benchmark__Xdr________Encode", Benchmark__Xdr________Encode)
+	// t.Run("Benchmark__Gcbor______Encode", Benchmark__Gcbor______Encode)
+	// t.Run("Benchmark__Xdr________Encode", Benchmark__Xdr________Encode)
 	t.Run("Benchmark__Sereal_____Encode", Benchmark__Sereal_____Encode)
 
 	t.Run("Benchmark__Msgpack____Decode", Benchmark__Msgpack____Decode)
@@ -50,14 +57,23 @@ func benchmarkCodecXGroup(t *testing.B) {
 	t.Run("Benchmark__Gob________Decode", Benchmark__Gob________Decode)
 	t.Run("Benchmark__JsonIter___Decode", Benchmark__JsonIter___Decode)
 	t.Run("Benchmark__Bson_______Decode", Benchmark__Bson_______Decode)
-	t.Run("Benchmark__VMsgpack___Decode", Benchmark__VMsgpack___Decode)
-	t.Run("Benchmark__Gcbor______Decode", Benchmark__Gcbor______Decode)
-	t.Run("Benchmark__Xdr________Decode", Benchmark__Xdr________Decode)
-	t.Run("Benchmark__Sereal_____Decode", Benchmark__Sereal_____Decode)
+	// t.Run("Benchmark__VMsgpack___Decode", Benchmark__VMsgpack___Decode)
+	// t.Run("Benchmark__Gcbor______Decode", Benchmark__Gcbor______Decode)
+	// t.Run("Benchmark__Xdr________Decode", Benchmark__Xdr________Decode)
+	// t.Run("Benchmark__Sereal_____Decode", Benchmark__Sereal_____Decode)
 }
 
-func BenchmarkXSuite(t *testing.B)      { benchmarkSuite(t, benchmarkXGroup) }
-func BenchmarkCodecXSuite(t *testing.B) { benchmarkSuite(t, benchmarkCodecXGroup) }
+var benchmarkXSkipMsg = `>>>> Skipping - these cannot (en|de)code TestStruc - encode (gcbor, xdr), decode (gcbor, vmsgpack, xdr, sereal)`
+
+func BenchmarkXSuite(t *testing.B) {
+	println(benchmarkXSkipMsg)
+	benchmarkSuite(t, benchmarkXGroup)
+}
+
+func BenchmarkCodecXSuite(t *testing.B) {
+	println(benchmarkXSkipMsg)
+	benchmarkSuite(t, benchmarkCodecXGroup)
+}
 
 func benchmarkAllJsonEncodeGroup(t *testing.B) {
 	logT(nil, "\n-------------------------------\n")
