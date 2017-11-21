@@ -10,7 +10,7 @@ package codec
 import "testing"
 
 func benchmarkCodecXGenGroup(t *testing.B) {
-	logT(nil, "\n-------------------------------\n")
+	logT(nil, "-------------------------------\n")
 	t.Run("Benchmark__Msgpack____Encode", Benchmark__Msgpack____Encode)
 	t.Run("Benchmark__Binc_______Encode", Benchmark__Binc_______Encode)
 	t.Run("Benchmark__Simple_____Encode", Benchmark__Simple_____Encode)
@@ -28,6 +28,7 @@ func benchmarkCodecXGenGroup(t *testing.B) {
 	// t.Run("Benchmark__Xdr________Encode", Benchmark__Xdr________Encode)
 	t.Run("Benchmark__Sereal_____Encode", Benchmark__Sereal_____Encode)
 
+	logT(nil, "-------------------------------\n")
 	t.Run("Benchmark__Msgpack____Decode", Benchmark__Msgpack____Decode)
 	t.Run("Benchmark__Binc_______Decode", Benchmark__Binc_______Decode)
 	t.Run("Benchmark__Simple_____Decode", Benchmark__Simple_____Decode)

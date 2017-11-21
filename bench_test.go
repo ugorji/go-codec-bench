@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"reflect"
 	"runtime"
-	"strings"
 	"testing"
 	"time"
 )
@@ -91,6 +90,8 @@ func runBenchInit() {
 	if benchInitDebug {
 		logT(nil, "<<<<====>>>> depth: %v, ts: %#v\n", benchDepth, benchTs)
 	}
+	runtime.GC()
+	time.Sleep(1 * time.Second)
 }
 
 var vBenchTs = TestStruc{}
@@ -119,6 +120,7 @@ func doBenchCheck(name string, encfn benchEncFn, decfn benchDecFn) {
 	buf, err := encfn(benchTs, nil)
 	if err != nil {
 		logT(nil, "\t%10s: **** Error encoding benchTs: %v", name, err)
+		return
 	}
 	encDur := time.Now().Sub(tnow)
 	encLen := len(buf)
@@ -131,19 +133,46 @@ func doBenchCheck(name string, encfn benchEncFn, decfn benchDecFn) {
 	var ts2 TestStruc
 	if err = decfn(buf, &ts2); err != nil {
 		logT(nil, "\t%10s: **** Error decoding into new TestStruc: %v", name, err)
+		return
 	}
 	decDur := time.Now().Sub(tnow)
-	logT(nil, "\t%10s: len: %d bytes,\t encode: %v,\t decode: %v\n", name, encLen, encDur, decDur)
 	// if benchCheckDoDeepEqual {
 	if benchVerify {
-		if err = deepEqual(benchTs, ts2); err != nil {
-			logT(nil, "BenchVerify: Error comparing benchTs: %v\n--------\n%v\n--------\n%v",
-				err, benchTs, ts2)
-			if strings.Contains(name, "json") {
-				logT(nil, "\n\tDECODED FROM\n--------\n%s", buf)
-			}
+		err = deepEqual(benchTs, &ts2)
+		if err == nil {
+			logT(nil, "\t%10s: len: %d bytes,\t encode: %v,\t decode: %v,\tencoded = decoded", name, encLen, encDur, decDur)
+		} else {
+			logT(nil, "\t%10s: len: %d bytes,\t encode: %v,\t decode: %v,\tencoded != decoded: %v", name, encLen, encDur, decDur, err)
+			// if strings.Contains(name, "json") {
+			// 	println(">>>>>")
+			// 	f1, _ := os.Create("1.out")
+			// 	f2, _ := os.Create("2.out")
+			// 	f3, _ := os.Create("3.json")
+			// 	buf3, _ := json.MarshalIndent(&ts2, "", "\t")
+			// 	spew.Config.SortKeys = true
+			// 	spew.Config.SpewKeys = true
+			// 	println("^^^^^^^^^^^^^^")
+			// 	spew.Fdump(f1, benchTs)
+			// 	println("^^^^^^^^^^^^^^")
+			// 	spew.Fdump(f2, &ts2)
+			// 	println("^^^^^^^^^^^^^^")
+			// 	f3.Write(buf3)
+			// 	f1.Close()
+			// 	f2.Close()
+			// 	f3.Close()
+			// }
+			// logT(nil, "\t: err: %v,\n benchTs: %#v\n\n, ts2: %#v\n\n", err, benchTs, ts2) // TODO: remove
+			// logT(nil, "BenchVerify: Error comparing en|decoded TestStruc: %v", err)
+			// return
+			// logT(nil, "BenchVerify: Error comparing benchTs: %v\n--------\n%v\n--------\n%v", err, benchTs, ts2)
+			// if strings.Contains(name, "json") {
+			// 	logT(nil, "\n\tDECODED FROM\n--------\n%s", buf)
+			// }
 		}
+	} else {
+		logT(nil, "\t%10s: len: %d bytes,\t encode: %v,\t decode: %v", name, encLen, encDur, decDur)
 	}
+	return
 }
 
 func fnBenchmarkEncode(b *testing.B, encName string, ts interface{}, encfn benchEncFn) {

@@ -5,7 +5,10 @@ package codec
 
 // see notes in z_all_test.go
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 import . "github.com/ugorji/go/codec"
 
@@ -16,13 +19,37 @@ func benchmarkGroupReset() {
 
 	benchMapStringKeyOnly = false
 	benchInitDebug = false
-	// benchVerify = false
+	benchVerify = false
 	benchDepth = 2
 	benchDoInitBench = false
 	benchUnscientificRes = false
 }
 
-func benchmarkSuite(t *testing.B, f func(t *testing.B)) {
+func benchmarkOneFn(fns []func(*testing.B)) func(*testing.B) {
+	switch len(fns) {
+	case 0:
+		return nil
+	case 1:
+		return fns[0]
+	default:
+		return func(t *testing.B) {
+			for _, f := range fns {
+				f(t)
+			}
+		}
+	}
+}
+
+func benchmarkSuiteNoop(b *testing.B) {
+	testOnce.Do(testInitAll)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		time.Sleep(1 * time.Millisecond)
+	}
+}
+
+func benchmarkSuite(t *testing.B, fns ...func(t *testing.B)) {
+	f := benchmarkOneFn(fns)
 	// find . -name "*_test.go" | xargs grep -e 'flag.' | cut -d '&' -f 2 | cut -d ',' -f 1 | grep -e '^bench'
 
 	testReinit() // so flag.Parse() is called first, and never called again
@@ -33,18 +60,20 @@ func benchmarkSuite(t *testing.B, f func(t *testing.B)) {
 
 	benchmarkGroupReset()
 
+	benchVerify = true
 	benchDoInitBench = true
 	benchUnscientificRes = true
 	testReinit()
 	benchReinit()
-	t.Run("init-metrics", f)
+	t.Run("init-metrics....", func(t *testing.B) { t.Run("Benchmark__Noop.............", benchmarkSuiteNoop) })
 
+	benchVerify = false
 	benchDoInitBench = false
 	benchUnscientificRes = false
 
 	testReinit()
 	benchReinit()
-	t.Run("options-false", f)
+	t.Run("options-false...", f)
 
 	testUseIoEncDec = 128
 	testReinit()
@@ -55,14 +84,15 @@ func benchmarkSuite(t *testing.B, f func(t *testing.B)) {
 	testUseReset = true
 	testReinit()
 	benchReinit()
-	t.Run("reset-enc-dec", f)
+	t.Run("reset-enc-dec...", f)
 	testUseReset = false
 
-	testInternStr = true
-	testReinit()
-	benchReinit()
-	t.Run("intern-strings", f)
-	testInternStr = false
+	// intern string only applies to binc: don't do a full run of it
+	// testInternStr = true
+	// testReinit()
+	// benchReinit()
+	// t.Run("intern-strings", f)
+	// testInternStr = false
 
 	// benchVerify is kinda lame - serves no real purpose.
 	// benchVerify = true
@@ -72,7 +102,8 @@ func benchmarkSuite(t *testing.B, f func(t *testing.B)) {
 	// benchVerify = false
 }
 
-func benchmarkQuickSuite(t *testing.B, f func(t *testing.B)) {
+func benchmarkQuickSuite(t *testing.B, fns ...func(t *testing.B)) {
+	f := benchmarkOneFn(fns)
 	benchmarkGroupReset()
 
 	// bd=1 2 | ti=-1, 1024 |
@@ -81,13 +112,13 @@ func benchmarkQuickSuite(t *testing.B, f func(t *testing.B)) {
 	benchDepth = 1
 	testReinit()
 	benchReinit()
-	t.Run("json-all-bd1", f)
+	t.Run("json-all-bd1........", f)
 
 	testUseIoEncDec = -1
 	benchDepth = 4
 	testReinit()
 	benchReinit()
-	t.Run("json-all-bd4", f)
+	t.Run("json-all-bd4........", f)
 
 	testUseIoEncDec = 1024
 	benchDepth = 1
@@ -99,7 +130,7 @@ func benchmarkQuickSuite(t *testing.B, f func(t *testing.B)) {
 	benchDepth = 4
 	testReinit()
 	benchReinit()
-	t.Run("json-all-bd4-buf1024-4", f)
+	t.Run("json-all-bd4-buf1024", f)
 
 	benchmarkGroupReset()
 }
@@ -116,7 +147,7 @@ find . -name "$z" | xargs grep -e '^func Benchmark.*Decode' | \
 */
 
 func benchmarkCodecGroup(t *testing.B) {
-	logT(nil, "\n-------------------------------\n")
+	logT(nil, "-------------------------------\n")
 	t.Run("Benchmark__Msgpack____Encode", Benchmark__Msgpack____Encode)
 	t.Run("Benchmark__Binc_______Encode", Benchmark__Binc_______Encode)
 	t.Run("Benchmark__Simple_____Encode", Benchmark__Simple_____Encode)
@@ -124,7 +155,7 @@ func benchmarkCodecGroup(t *testing.B) {
 	t.Run("Benchmark__Json_______Encode", Benchmark__Json_______Encode)
 	t.Run("Benchmark__Std_Json___Encode", Benchmark__Std_Json___Encode)
 	t.Run("Benchmark__Gob________Encode", Benchmark__Gob________Encode)
-
+	logT(nil, "-------------------------------\n")
 	t.Run("Benchmark__Msgpack____Decode", Benchmark__Msgpack____Decode)
 	t.Run("Benchmark__Binc_______Decode", Benchmark__Binc_______Decode)
 	t.Run("Benchmark__Simple_____Decode", Benchmark__Simple_____Decode)
@@ -136,11 +167,6 @@ func benchmarkCodecGroup(t *testing.B) {
 
 func BenchmarkCodecSuite(t *testing.B) { benchmarkSuite(t, benchmarkCodecGroup) }
 
-func benchmarkJsonEncodeDecodeGroup(t *testing.B) {
-	t.Run("Benchmark__Json_______Encode", Benchmark__Json_______Encode)
-	t.Run("Benchmark__Json_______Decode", Benchmark__Json_______Decode)
-}
-
 func benchmarkJsonEncodeGroup(t *testing.B) {
 	t.Run("Benchmark__Json_______Encode", Benchmark__Json_______Encode)
 }
@@ -150,7 +176,7 @@ func benchmarkJsonDecodeGroup(t *testing.B) {
 }
 
 func BenchmarkCodecQuickJsonSuite(t *testing.B) {
-	// benchmarkQuickSuite(t, benchmarkJsonEncodeDecodeGroup)
-	benchmarkQuickSuite(t, benchmarkJsonEncodeGroup)
-	benchmarkQuickSuite(t, benchmarkJsonDecodeGroup)
+	benchmarkQuickSuite(t, benchmarkJsonEncodeGroup, benchmarkJsonDecodeGroup)
+	// benchmarkQuickSuite(t, benchmarkJsonEncodeGroup)
+	// benchmarkQuickSuite(t, benchmarkJsonDecodeGroup)
 }
