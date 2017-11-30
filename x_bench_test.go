@@ -51,10 +51,18 @@ func benchXPreInit() {
 }
 
 func fnVMsgpackEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
+	if testUseIoEncDec >= 0 {
+		buf := bytes.NewBuffer(bsIn[:0]) // new(bytes.Buffer)
+		err := vmsgpack.NewEncoder(buf).Encode(ts)
+		return buf.Bytes(), err
+	}
 	return vmsgpack.Marshal(ts)
 }
 
 func fnVMsgpackDecodeFn(buf []byte, ts interface{}) error {
+	if testUseIoEncDec >= 0 {
+		return vmsgpack.NewDecoder(bytes.NewReader(buf)).Decode(ts)
+	}
 	return vmsgpack.Unmarshal(buf, ts)
 }
 
@@ -68,7 +76,7 @@ func fnBsonDecodeFn(buf []byte, ts interface{}) error {
 
 func fnJsonIterEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
 	if testUseIoEncDec >= 0 {
-		buf := new(bytes.Buffer)
+		buf := bytes.NewBuffer(bsIn[:0]) // new(bytes.Buffer)
 		err := jsoniter.NewEncoder(buf).Encode(ts)
 		return buf.Bytes(), err
 	}
@@ -84,8 +92,8 @@ func fnJsonIterDecodeFn(buf []byte, ts interface{}) error {
 
 func fnXdrEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
 	buf := fnBenchmarkByteBuf(bsIn)
-	_, err := xdr.Marshal(buf, ts)
-	return buf.Bytes(), err
+	i, err := xdr.Marshal(buf, ts)
+	return buf.Bytes()[:i], err
 }
 
 func fnXdrDecodeFn(buf []byte, ts interface{}) error {

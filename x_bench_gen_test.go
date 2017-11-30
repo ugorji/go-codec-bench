@@ -46,7 +46,7 @@ func fnEasyjsonEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
 		return nil, errors.New("easyjson: input is not a easyjson.Marshaler")
 	}
 	if testUseIoEncDec >= 0 {
-		buf := new(bytes.Buffer)
+		buf := bytes.NewBuffer(bsIn[:0]) // new(bytes.Buffer)
 		_, err := easyjson.MarshalToWriter(ts2, buf)
 		return buf.Bytes(), err
 	}
