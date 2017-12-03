@@ -155,6 +155,7 @@ func benchmarkCodecGroup(t *testing.B) {
 	t.Run("Benchmark__Json_______Encode", Benchmark__Json_______Encode)
 	t.Run("Benchmark__Std_Json___Encode", Benchmark__Std_Json___Encode)
 	t.Run("Benchmark__Gob________Encode", Benchmark__Gob________Encode)
+	// t.Run("Benchmark__Std_Xml____Encode", Benchmark__Std_Xml____Encode)
 	logT(nil, "-------------------------------\n")
 	t.Run("Benchmark__Msgpack____Decode", Benchmark__Msgpack____Decode)
 	t.Run("Benchmark__Binc_______Decode", Benchmark__Binc_______Decode)
@@ -163,6 +164,7 @@ func benchmarkCodecGroup(t *testing.B) {
 	t.Run("Benchmark__Json_______Decode", Benchmark__Json_______Decode)
 	t.Run("Benchmark__Std_Json___Decode", Benchmark__Std_Json___Decode)
 	t.Run("Benchmark__Gob________Decode", Benchmark__Gob________Decode)
+	// t.Run("Benchmark__Std_Xml____Decode", Benchmark__Std_Xml____Decode)
 }
 
 func BenchmarkCodecSuite(t *testing.B) { benchmarkSuite(t, benchmarkCodecGroup) }

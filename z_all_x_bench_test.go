@@ -42,6 +42,7 @@ func benchmarkCodecXGroup(t *testing.B) {
 	t.Run("Benchmark__Json_______Encode", Benchmark__Json_______Encode)
 	t.Run("Benchmark__Std_Json___Encode", Benchmark__Std_Json___Encode)
 	t.Run("Benchmark__Gob________Encode", Benchmark__Gob________Encode)
+	// t.Run("Benchmark__Std_Xml____Encode", Benchmark__Std_Xml____Encode)
 	t.Run("Benchmark__JsonIter___Encode", Benchmark__JsonIter___Encode)
 	t.Run("Benchmark__Bson_______Encode", Benchmark__Bson_______Encode)
 	t.Run("Benchmark__VMsgpack___Encode", Benchmark__VMsgpack___Encode)
@@ -57,6 +58,7 @@ func benchmarkCodecXGroup(t *testing.B) {
 	t.Run("Benchmark__Json_______Decode", Benchmark__Json_______Decode)
 	t.Run("Benchmark__Std_Json___Decode", Benchmark__Std_Json___Decode)
 	t.Run("Benchmark__Gob________Decode", Benchmark__Gob________Decode)
+	// t.Run("Benchmark__Std_Xml____Decode", Benchmark__Std_Xml____Decode)
 	t.Run("Benchmark__JsonIter___Decode", Benchmark__JsonIter___Decode)
 	t.Run("Benchmark__Bson_______Decode", Benchmark__Bson_______Decode)
 	// t.Run("Benchmark__VMsgpack___Decode", Benchmark__VMsgpack___Decode)
@@ -65,7 +67,7 @@ func benchmarkCodecXGroup(t *testing.B) {
 	// t.Run("Benchmark__Sereal_____Decode", Benchmark__Sereal_____Decode)
 }
 
-var benchmarkXSkipMsg = `>>>> Skipping - these cannot (en|de)code TestStruc - encode (gcbor, xdr), decode (gcbor, vmsgpack, xdr, sereal)`
+var benchmarkXSkipMsg = `>>>> Skipping - these cannot (en|de)code TestStruc - encode (gcbor, xdr, xml), decode (gcbor, vmsgpack, xdr, sereal, xml)`
 
 func BenchmarkXSuite(t *testing.B) {
 	println(benchmarkXSkipMsg)
