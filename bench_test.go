@@ -53,7 +53,6 @@ func benchPreInit() {
 	// }
 
 	benchCheckers = append(benchCheckers,
-		// benchChecker{"noop", fnNoopEncodeFn, fnNoopDecodeFn}, // TODO: why comment this out?
 		benchChecker{"msgpack", fnMsgpackEncodeFn, fnMsgpackDecodeFn},
 		benchChecker{"binc", fnBincEncodeFn, fnBincDecodeFn},
 		benchChecker{"simple", fnSimpleEncodeFn, fnSimpleDecodeFn},
@@ -259,16 +258,6 @@ func fnSimpleDecodeFn(buf []byte, ts interface{}) error {
 	return sTestCodecDecode(buf, ts, testSimpleH, &testSimpleH.BasicHandle)
 }
 
-func fnNoopEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
-	return
-	// return sTestCodecEncode(ts, bsIn, fnBenchmarkByteBuf, testNoopH, &testNoopH.BasicHandle)
-}
-
-func fnNoopDecodeFn(buf []byte, ts interface{}) error {
-	return nil
-	// return sTestCodecDecode(buf, ts, testNoopH, &testNoopH.BasicHandle)
-}
-
 func fnCborEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
 	return sTestCodecEncode(ts, bsIn, fnBenchmarkByteBuf, testCborH, &testCborH.BasicHandle)
 }
@@ -323,11 +312,6 @@ func fnStdJsonDecodeFn(buf []byte, ts interface{}) error {
 
 // ----------- DECODE ------------------
 
-// Re-enable NoopHandle tests when fixed. TODO: Oct 16, 2015
-func Benchmark__Noop_______Encode(b *testing.B) {
-	fnBenchmarkEncode(b, "noop", benchTs, fnNoopEncodeFn)
-}
-
 func Benchmark__Msgpack____Encode(b *testing.B) {
 	fnBenchmarkEncode(b, "msgpack", benchTs, fnMsgpackEncodeFn)
 }
@@ -362,10 +346,6 @@ func Benchmark__Std_Xml____Encode(b *testing.B) {
 
 // ----------- DECODE ------------------
 
-func Benchmark__Noop_______Decode(b *testing.B) {
-	fnBenchmarkDecode(b, "noop", benchTs, fnNoopEncodeFn, fnNoopDecodeFn, fnBenchNewTs)
-}
-
 func Benchmark__Msgpack____Decode(b *testing.B) {
 	fnBenchmarkDecode(b, "msgpack", benchTs, fnMsgpackEncodeFn, fnMsgpackDecodeFn, fnBenchNewTs)
 }
@@ -396,10 +376,4 @@ func Benchmark__Gob________Decode(b *testing.B) {
 
 func Benchmark__Std_Xml____Decode(b *testing.B) {
 	fnBenchmarkDecode(b, "std-xml", benchTs, fnStdXmlEncodeFn, fnStdXmlDecodeFn, fnBenchNewTs)
-}
-
-// ---------- NOOP -----------
-
-func TestBenchNoop(t *testing.T) {
-	testOnce.Do(testInitAll)
 }
