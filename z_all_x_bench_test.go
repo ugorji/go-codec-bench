@@ -97,7 +97,12 @@ func benchmarkAllJsonDecodeGroup(t *testing.B) {
 }
 
 func BenchmarkCodecQuickSuite(t *testing.B) {
-	benchmarkQuickSuite(t, benchmarkAllJsonEncodeGroup, benchmarkAllJsonDecodeGroup)
+	benchmarkQuickSuite(t, 1, benchmarkAllJsonEncodeGroup)
+	benchmarkQuickSuite(t, 4, benchmarkAllJsonEncodeGroup)
+	benchmarkQuickSuite(t, 1, benchmarkAllJsonDecodeGroup)
+	benchmarkQuickSuite(t, 4, benchmarkAllJsonDecodeGroup)
+	// benchmarkQuickSuite(t, 1, benchmarkAllJsonEncodeGroup, benchmarkAllJsonDecodeGroup)
+	// benchmarkQuickSuite(t, 4, benchmarkAllJsonEncodeGroup, benchmarkAllJsonDecodeGroup)
 	// benchmarkQuickSuite(t, benchmarkAllJsonEncodeGroup)
 	// benchmarkQuickSuite(t, benchmarkAllJsonDecodeGroup)
 }

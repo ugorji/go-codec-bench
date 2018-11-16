@@ -9,6 +9,7 @@ package codec
 // see notes in z_all_test.go
 
 import (
+	"strconv"
 	"testing"
 	"time"
 )
@@ -105,35 +106,29 @@ func benchmarkSuite(t *testing.B, fns ...func(t *testing.B)) {
 	// benchVerify = false
 }
 
-func benchmarkQuickSuite(t *testing.B, fns ...func(t *testing.B)) {
+func benchmarkQuickSuite(t *testing.B, depth int, fns ...func(t *testing.B)) {
 	f := benchmarkOneFn(fns)
 	benchmarkGroupReset()
 
 	// bd=1 2 | ti=-1, 1024 |
 
 	testUseIoEncDec = -1
-	benchDepth = 1
+	benchDepth = depth
 	testReinit()
 	benchReinit()
-	t.Run("json-all-bd1........", f)
+	t.Run("json-all-bd"+strconv.Itoa(depth)+"........", f)
 
-	testUseIoEncDec = -1
-	benchDepth = 4
+	testUseIoEncDec = 0
+	benchDepth = depth
 	testReinit()
 	benchReinit()
-	t.Run("json-all-bd4........", f)
-
-	testUseIoEncDec = 1024
-	benchDepth = 1
-	testReinit()
-	benchReinit()
-	t.Run("json-all-bd1-buf1024", f)
+	t.Run("json-all-bd"+strconv.Itoa(depth)+"-io.....", f)
 
 	testUseIoEncDec = 1024
-	benchDepth = 4
+	benchDepth = depth
 	testReinit()
 	benchReinit()
-	t.Run("json-all-bd4-buf1024", f)
+	t.Run("json-all-bd"+strconv.Itoa(depth)+"-buf1024", f)
 
 	benchmarkGroupReset()
 }
@@ -181,7 +176,12 @@ func benchmarkJsonDecodeGroup(t *testing.B) {
 }
 
 func BenchmarkCodecQuickJsonSuite(t *testing.B) {
-	benchmarkQuickSuite(t, benchmarkJsonEncodeGroup, benchmarkJsonDecodeGroup)
+	benchmarkQuickSuite(t, 1, benchmarkJsonEncodeGroup)
+	benchmarkQuickSuite(t, 4, benchmarkJsonEncodeGroup)
+	benchmarkQuickSuite(t, 1, benchmarkJsonDecodeGroup)
+	benchmarkQuickSuite(t, 4, benchmarkJsonDecodeGroup)
+	// benchmarkQuickSuite(t, 1, benchmarkJsonEncodeGroup, benchmarkJsonDecodeGroup)
+	// benchmarkQuickSuite(t, 4, benchmarkJsonEncodeGroup, benchmarkJsonDecodeGroup)
 	// benchmarkQuickSuite(t, benchmarkJsonEncodeGroup)
 	// benchmarkQuickSuite(t, benchmarkJsonDecodeGroup)
 }

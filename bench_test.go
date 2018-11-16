@@ -123,7 +123,7 @@ func doBenchCheck(name string, encfn benchEncFn, decfn benchDecFn) {
 		logT(nil, "\t%10s: **** Error encoding benchTs: %v", name, err)
 		return
 	}
-	encDur := time.Now().Sub(tnow)
+	encDur := time.Since(tnow)
 	encLen := len(buf)
 	runtime.GC()
 	if !benchUnscientificRes {
@@ -136,7 +136,7 @@ func doBenchCheck(name string, encfn benchEncFn, decfn benchDecFn) {
 		logT(nil, "\t%10s: **** Error decoding into new TestStruc: %v", name, err)
 		return
 	}
-	decDur := time.Now().Sub(tnow)
+	decDur := time.Since(tnow)
 	// if benchCheckDoDeepEqual {
 	if benchVerify {
 		err = deepEqual(benchTs, &ts2)
