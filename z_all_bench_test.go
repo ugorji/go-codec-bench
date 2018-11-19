@@ -112,18 +112,21 @@ func benchmarkQuickSuite(t *testing.B, depth int, fns ...func(t *testing.B)) {
 
 	// bd=1 2 | ti=-1, 1024 |
 
+	testUseReset = true
 	testUseIoEncDec = -1
 	benchDepth = depth
 	testReinit()
 	benchReinit()
 	t.Run("json-all-bd"+strconv.Itoa(depth)+"........", f)
 
+	testUseReset = true
 	testUseIoEncDec = 0
 	benchDepth = depth
 	testReinit()
 	benchReinit()
 	t.Run("json-all-bd"+strconv.Itoa(depth)+"-io.....", f)
 
+	testUseReset = true
 	testUseIoEncDec = 1024
 	benchDepth = depth
 	testReinit()
