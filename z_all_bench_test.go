@@ -10,23 +10,53 @@ package codec
 
 import (
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 )
 
 import . "github.com/ugorji/go/codec"
 
-func benchmarkGroupReset() {
-	testUseIoEncDec = -1
-	testUseReset = false
-	testInternStr = false
+var benchmarkGroupOnce sync.Once
 
-	benchMapStringKeyOnly = false
-	benchInitDebug = false
-	benchVerify = false
-	benchDepth = 2
-	benchDoInitBench = false
-	benchUnscientificRes = false
+var benchmarkGroupSave struct {
+	testUseIoEncDec int
+	testUseReset    bool
+	testInternStr   bool
+
+	benchDepth            int
+	benchMapStringKeyOnly bool
+	benchInitDebug        bool
+	benchVerify           bool
+	benchDoInitBench      bool
+	benchUnscientificRes  bool
+}
+
+func benchmarkGroupInitAll() {
+	testInitAll() // calls flag.Parse
+	benchmarkGroupSave.testUseIoEncDec = testUseIoEncDec
+	benchmarkGroupSave.testUseReset = testUseReset
+	benchmarkGroupSave.testInternStr = testInternStr
+
+	benchmarkGroupSave.benchDepth = benchDepth
+	benchmarkGroupSave.benchMapStringKeyOnly = benchMapStringKeyOnly
+	benchmarkGroupSave.benchInitDebug = benchInitDebug
+	benchmarkGroupSave.benchVerify = benchVerify
+	benchmarkGroupSave.benchDoInitBench = benchDoInitBench
+	benchmarkGroupSave.benchUnscientificRes = benchUnscientificRes
+}
+
+func benchmarkGroupReset() {
+	testUseIoEncDec = benchmarkGroupSave.testUseIoEncDec
+	testUseReset = benchmarkGroupSave.testUseReset
+	testInternStr = benchmarkGroupSave.testInternStr
+
+	benchDepth = benchmarkGroupSave.benchDepth
+	benchMapStringKeyOnly = benchmarkGroupSave.benchMapStringKeyOnly
+	benchInitDebug = benchmarkGroupSave.benchInitDebug
+	benchVerify = benchmarkGroupSave.benchVerify
+	benchDoInitBench = benchmarkGroupSave.benchDoInitBench
+	benchUnscientificRes = benchmarkGroupSave.benchUnscientificRes
 }
 
 func benchmarkOneFn(fns []func(*testing.B)) func(*testing.B) {
@@ -53,6 +83,8 @@ func benchmarkSuiteNoop(b *testing.B) {
 }
 
 func benchmarkSuite(t *testing.B, fns ...func(t *testing.B)) {
+	benchmarkGroupOnce.Do(benchmarkGroupInitAll)
+
 	f := benchmarkOneFn(fns)
 	// find . -name "*_test.go" | xargs grep -e 'flag.' | cut -d '&' -f 2 | cut -d ',' -f 1 | grep -e '^bench'
 
@@ -106,7 +138,8 @@ func benchmarkSuite(t *testing.B, fns ...func(t *testing.B)) {
 	// benchVerify = false
 }
 
-func benchmarkQuickSuite(t *testing.B, depth int, fns ...func(t *testing.B)) {
+func benchmarkQuickSuite(t *testing.B, fns ...func(t *testing.B)) {
+	benchmarkGroupOnce.Do(benchmarkGroupInitAll)
 	f := benchmarkOneFn(fns)
 	benchmarkGroupReset()
 
@@ -114,24 +147,25 @@ func benchmarkQuickSuite(t *testing.B, depth int, fns ...func(t *testing.B)) {
 
 	testUseReset = true
 	testUseIoEncDec = -1
-	benchDepth = depth
+	// benchDepth = depth
 	testReinit()
 	benchReinit()
-	t.Run("json-all-bd"+strconv.Itoa(depth)+"........", f)
+
+	t.Run("json-all-bd"+strconv.Itoa(benchDepth)+"........", f)
 
 	testUseReset = true
 	testUseIoEncDec = 0
-	benchDepth = depth
+	// benchDepth = depth
 	testReinit()
 	benchReinit()
-	t.Run("json-all-bd"+strconv.Itoa(depth)+"-io.....", f)
+	t.Run("json-all-bd"+strconv.Itoa(benchDepth)+"-io.....", f)
 
 	testUseReset = true
 	testUseIoEncDec = 1024
-	benchDepth = depth
+	// benchDepth = depth
 	testReinit()
 	benchReinit()
-	t.Run("json-all-bd"+strconv.Itoa(depth)+"-buf1024", f)
+	t.Run("json-all-bd"+strconv.Itoa(benchDepth)+"-buf1024", f)
 
 	benchmarkGroupReset()
 }
@@ -179,11 +213,14 @@ func benchmarkJsonDecodeGroup(t *testing.B) {
 }
 
 func BenchmarkCodecQuickJsonSuite(t *testing.B) {
-	depths := [...]int{4} // {1, 4}
-	for _, d := range depths {
-		benchmarkQuickSuite(t, d, benchmarkJsonEncodeGroup)
-		benchmarkQuickSuite(t, d, benchmarkJsonDecodeGroup)
-	}
+	benchmarkQuickSuite(t, benchmarkJsonEncodeGroup)
+	benchmarkQuickSuite(t, benchmarkJsonDecodeGroup)
+
+	// depths := [...]int{1, 4}
+	// for _, d := range depths {
+	// 	benchmarkQuickSuite(t, d, benchmarkJsonEncodeGroup)
+	// 	benchmarkQuickSuite(t, d, benchmarkJsonDecodeGroup)
+	// }
 
 	// benchmarkQuickSuite(t, 1, benchmarkJsonEncodeGroup)
 	// benchmarkQuickSuite(t, 4, benchmarkJsonEncodeGroup)
