@@ -111,10 +111,10 @@ func benchmarkSuite(t *testing.B, fns ...func(t *testing.B)) {
 	benchReinit()
 	t.Run("options-false...", f)
 
-	testUseIoEncDec = 128
+	testUseIoEncDec = 1024
 	testReinit()
 	benchReinit()
-	t.Run("use-io-not-bytes", f)
+	t.Run("use-bufio-!bytes", f)
 	testUseIoEncDec = -1
 
 	testUseReset = true
@@ -154,19 +154,19 @@ func benchmarkQuickSuite(t *testing.B, fns ...func(t *testing.B)) {
 	t.Run("json-all-bd"+strconv.Itoa(benchDepth)+"........", f)
 
 	testUseReset = true
-	testUseIoEncDec = 0
-	// benchDepth = depth
-	testReinit()
-	benchReinit()
-	t.Run("json-all-bd"+strconv.Itoa(benchDepth)+"-io.....", f)
-
-	testUseReset = true
 	// encoded size of TestStruc is between 20K and 30K for bd=1 // consider buffer=1024 * 16 * benchDepth
 	testUseIoEncDec = 1024 // (value of defEncByteBufSize): use smaller buffer, and more flushes - it's ok.
 	// benchDepth = depth
 	testReinit()
 	benchReinit()
 	t.Run("json-all-bd"+strconv.Itoa(benchDepth)+"-buf"+strconv.Itoa(testUseIoEncDec), f)
+
+	testUseReset = true
+	testUseIoEncDec = 0
+	// benchDepth = depth
+	testReinit()
+	benchReinit()
+	t.Run("json-all-bd"+strconv.Itoa(benchDepth)+"-io.....", f)
 
 	benchmarkGroupReset()
 }
