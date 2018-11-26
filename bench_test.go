@@ -92,7 +92,7 @@ func runBenchInit() {
 		logT(nil, "<<<<====>>>> depth: %v, ts: %#v\n", benchDepth, benchTs)
 	}
 	runtime.GC()
-	time.Sleep(1 * time.Second)
+	time.Sleep(100 * time.Millisecond)
 }
 
 var vBenchTs = TestStruc{}

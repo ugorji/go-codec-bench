@@ -83,7 +83,7 @@ func benchmarkSuiteNoop(b *testing.B) {
 	testOnce.Do(testInitAll)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		time.Sleep(1 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 
@@ -108,6 +108,8 @@ func benchmarkSuite(t *testing.B, fns ...func(t *testing.B)) {
 	benchReinit()
 	t.Run("init-metrics....", func(t *testing.B) { t.Run("Benchmark__Noop.............", benchmarkSuiteNoop) })
 
+	benchmarkGroupReset()
+
 	benchVerify = false
 	benchDoInitBench = false
 	benchUnscientificRes = false
@@ -116,17 +118,21 @@ func benchmarkSuite(t *testing.B, fns ...func(t *testing.B)) {
 	benchReinit()
 	t.Run("options-false...", f)
 
+	benchmarkGroupReset()
+
 	testUseIoEncDec = 1024
 	testReinit()
 	benchReinit()
 	t.Run("use-bufio-!bytes", f)
-	testUseIoEncDec = -1
+
+	benchmarkGroupReset()
 
 	testUseReset = true
 	testReinit()
 	benchReinit()
 	t.Run("reset-enc-dec...", f)
-	testUseReset = false
+
+	benchmarkGroupReset()
 
 	// intern string only applies to binc: don't do a full run of it
 	// testInternStr = true
@@ -147,11 +153,11 @@ func benchmarkQuickSuite(t *testing.B, name string, fns ...func(t *testing.B)) {
 	benchmarkDivider()
 	benchmarkGroupOnce.Do(benchmarkGroupInitAll)
 	f := benchmarkOneFn(fns)
+
 	benchmarkGroupReset()
 
 	// bd=1 2 | ti=-1, 1024 |
 
-	testUseReset = true
 	testUseIoEncDec = -1
 	// benchDepth = depth
 	testReinit()
@@ -159,7 +165,6 @@ func benchmarkQuickSuite(t *testing.B, name string, fns ...func(t *testing.B)) {
 
 	t.Run(name+"-bd"+strconv.Itoa(benchDepth)+"........", f)
 
-	testUseReset = true
 	// encoded size of TestStruc is between 20K and 30K for bd=1 // consider buffer=1024 * 16 * benchDepth
 	testUseIoEncDec = 1024 // (value of defEncByteBufSize): use smaller buffer, and more flushes - it's ok.
 	// benchDepth = depth
@@ -167,7 +172,6 @@ func benchmarkQuickSuite(t *testing.B, name string, fns ...func(t *testing.B)) {
 	benchReinit()
 	t.Run(name+"-bd"+strconv.Itoa(benchDepth)+"-buf"+strconv.Itoa(testUseIoEncDec), f)
 
-	testUseReset = true
 	testUseIoEncDec = 0
 	// benchDepth = depth
 	testReinit()
