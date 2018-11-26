@@ -59,6 +59,11 @@ func benchmarkGroupReset() {
 	benchUnscientificRes = benchmarkGroupSave.benchUnscientificRes
 }
 
+func benchmarkDivider() {
+	// logT(nil, "-------------------------------\n")
+	println()
+}
+
 func benchmarkOneFn(fns []func(*testing.B)) func(*testing.B) {
 	switch len(fns) {
 	case 0:
@@ -138,7 +143,8 @@ func benchmarkSuite(t *testing.B, fns ...func(t *testing.B)) {
 	// benchVerify = false
 }
 
-func benchmarkQuickSuite(t *testing.B, fns ...func(t *testing.B)) {
+func benchmarkQuickSuite(t *testing.B, name string, fns ...func(t *testing.B)) {
+	benchmarkDivider()
 	benchmarkGroupOnce.Do(benchmarkGroupInitAll)
 	f := benchmarkOneFn(fns)
 	benchmarkGroupReset()
@@ -151,7 +157,7 @@ func benchmarkQuickSuite(t *testing.B, fns ...func(t *testing.B)) {
 	testReinit()
 	benchReinit()
 
-	t.Run("json-all-bd"+strconv.Itoa(benchDepth)+"........", f)
+	t.Run(name+"-bd"+strconv.Itoa(benchDepth)+"........", f)
 
 	testUseReset = true
 	// encoded size of TestStruc is between 20K and 30K for bd=1 // consider buffer=1024 * 16 * benchDepth
@@ -159,14 +165,14 @@ func benchmarkQuickSuite(t *testing.B, fns ...func(t *testing.B)) {
 	// benchDepth = depth
 	testReinit()
 	benchReinit()
-	t.Run("json-all-bd"+strconv.Itoa(benchDepth)+"-buf"+strconv.Itoa(testUseIoEncDec), f)
+	t.Run(name+"-bd"+strconv.Itoa(benchDepth)+"-buf"+strconv.Itoa(testUseIoEncDec), f)
 
 	testUseReset = true
 	testUseIoEncDec = 0
 	// benchDepth = depth
 	testReinit()
 	benchReinit()
-	t.Run("json-all-bd"+strconv.Itoa(benchDepth)+"-io.....", f)
+	t.Run(name+"-bd"+strconv.Itoa(benchDepth)+"-io.....", f)
 
 	benchmarkGroupReset()
 }
@@ -183,7 +189,7 @@ find . -name "$z" | xargs grep -e '^func Benchmark.*Decode' | \
 */
 
 func benchmarkCodecGroup(t *testing.B) {
-	logT(nil, "-------------------------------\n")
+	benchmarkDivider()
 	t.Run("Benchmark__Msgpack____Encode", Benchmark__Msgpack____Encode)
 	t.Run("Benchmark__Binc_______Encode", Benchmark__Binc_______Encode)
 	t.Run("Benchmark__Simple_____Encode", Benchmark__Simple_____Encode)
@@ -192,7 +198,7 @@ func benchmarkCodecGroup(t *testing.B) {
 	t.Run("Benchmark__Std_Json___Encode", Benchmark__Std_Json___Encode)
 	t.Run("Benchmark__Gob________Encode", Benchmark__Gob________Encode)
 	// t.Run("Benchmark__Std_Xml____Encode", Benchmark__Std_Xml____Encode)
-	logT(nil, "-------------------------------\n")
+	benchmarkDivider()
 	t.Run("Benchmark__Msgpack____Decode", Benchmark__Msgpack____Decode)
 	t.Run("Benchmark__Binc_______Decode", Benchmark__Binc_______Decode)
 	t.Run("Benchmark__Simple_____Decode", Benchmark__Simple_____Decode)
@@ -213,9 +219,19 @@ func benchmarkJsonDecodeGroup(t *testing.B) {
 	t.Run("Benchmark__Json_______Decode", Benchmark__Json_______Decode)
 }
 
-func BenchmarkCodecQuickJsonSuite(t *testing.B) {
-	benchmarkQuickSuite(t, benchmarkJsonEncodeGroup)
-	benchmarkQuickSuite(t, benchmarkJsonDecodeGroup)
+func benchmarkCborEncodeGroup(t *testing.B) {
+	t.Run("Benchmark__Cbor_______Encode", Benchmark__Cbor_______Encode)
+}
+
+func benchmarkCborDecodeGroup(t *testing.B) {
+	t.Run("Benchmark__Cbor_______Decode", Benchmark__Cbor_______Decode)
+}
+
+func BenchmarkCodecQuickSuite(t *testing.B) {
+	benchmarkQuickSuite(t, "cbor", benchmarkCborEncodeGroup)
+	benchmarkQuickSuite(t, "cbor", benchmarkCborDecodeGroup)
+	benchmarkQuickSuite(t, "json", benchmarkJsonEncodeGroup)
+	benchmarkQuickSuite(t, "json", benchmarkJsonDecodeGroup)
 
 	// depths := [...]int{1, 4}
 	// for _, d := range depths {

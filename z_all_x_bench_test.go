@@ -19,7 +19,7 @@ import "testing"
 // decode: gcbor, vmsgpack, xdr, sereal
 
 func benchmarkXGroup(t *testing.B) {
-	logT(nil, "-------------------------------\n")
+	benchmarkDivider()
 	t.Run("Benchmark__JsonIter___Encode", Benchmark__JsonIter___Encode)
 	t.Run("Benchmark__Bson_______Encode", Benchmark__Bson_______Encode)
 	t.Run("Benchmark__VMsgpack___Encode", Benchmark__VMsgpack___Encode)
@@ -27,7 +27,7 @@ func benchmarkXGroup(t *testing.B) {
 	// t.Run("Benchmark__Xdr________Encode", Benchmark__Xdr________Encode)
 	t.Run("Benchmark__Sereal_____Encode", Benchmark__Sereal_____Encode)
 
-	logT(nil, "-------------------------------\n")
+	benchmarkDivider()
 	t.Run("Benchmark__JsonIter___Decode", Benchmark__JsonIter___Decode)
 	t.Run("Benchmark__Bson_______Decode", Benchmark__Bson_______Decode)
 	// t.Run("Benchmark__VMsgpack___Decode", Benchmark__VMsgpack___Decode)
@@ -37,7 +37,7 @@ func benchmarkXGroup(t *testing.B) {
 }
 
 func benchmarkCodecXGroup(t *testing.B) {
-	logT(nil, "-------------------------------\n")
+	benchmarkDivider()
 	t.Run("Benchmark__Msgpack____Encode", Benchmark__Msgpack____Encode)
 	t.Run("Benchmark__Binc_______Encode", Benchmark__Binc_______Encode)
 	t.Run("Benchmark__Simple_____Encode", Benchmark__Simple_____Encode)
@@ -53,7 +53,7 @@ func benchmarkCodecXGroup(t *testing.B) {
 	// t.Run("Benchmark__Xdr________Encode", Benchmark__Xdr________Encode)
 	t.Run("Benchmark__Sereal_____Encode", Benchmark__Sereal_____Encode)
 
-	logT(nil, "-------------------------------\n")
+	benchmarkDivider()
 	t.Run("Benchmark__Msgpack____Decode", Benchmark__Msgpack____Decode)
 	t.Run("Benchmark__Binc_______Decode", Benchmark__Binc_______Decode)
 	t.Run("Benchmark__Simple_____Decode", Benchmark__Simple_____Decode)
@@ -83,22 +83,22 @@ func BenchmarkCodecXSuite(t *testing.B) {
 }
 
 func benchmarkAllJsonEncodeGroup(t *testing.B) {
-	logT(nil, "-------------------------------\n")
+	benchmarkDivider()
 	t.Run("Benchmark__Json_______Encode", Benchmark__Json_______Encode)
 	t.Run("Benchmark__Std_Json___Encode", Benchmark__Std_Json___Encode)
 	t.Run("Benchmark__JsonIter___Encode", Benchmark__JsonIter___Encode)
 }
 
 func benchmarkAllJsonDecodeGroup(t *testing.B) {
-	logT(nil, "-------------------------------\n")
+	benchmarkDivider()
 	t.Run("Benchmark__Json_______Decode", Benchmark__Json_______Decode)
 	t.Run("Benchmark__Std_Json___Decode", Benchmark__Std_Json___Decode)
 	t.Run("Benchmark__JsonIter___Decode", Benchmark__JsonIter___Decode)
 }
 
-func BenchmarkCodecQuickSuite(t *testing.B) {
-	benchmarkQuickSuite(t, benchmarkAllJsonEncodeGroup)
-	benchmarkQuickSuite(t, benchmarkAllJsonDecodeGroup)
+func BenchmarkCodecQuickAllJsonSuite(t *testing.B) {
+	benchmarkQuickSuite(t, "json-all", benchmarkAllJsonEncodeGroup)
+	benchmarkQuickSuite(t, "json-all", benchmarkAllJsonDecodeGroup)
 
 	// depths := [...]int{1, 4}
 	// for _, d := range depths {

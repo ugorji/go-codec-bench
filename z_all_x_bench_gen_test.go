@@ -13,7 +13,7 @@ package codec
 import "testing"
 
 func benchmarkCodecXGenGroup(t *testing.B) {
-	logT(nil, "-------------------------------\n")
+	benchmarkDivider()
 	t.Run("Benchmark__Msgpack____Encode", Benchmark__Msgpack____Encode)
 	t.Run("Benchmark__Binc_______Encode", Benchmark__Binc_______Encode)
 	t.Run("Benchmark__Simple_____Encode", Benchmark__Simple_____Encode)
