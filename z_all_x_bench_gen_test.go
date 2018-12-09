@@ -31,7 +31,7 @@ func benchmarkCodecXGenGroup(t *testing.B) {
 	// t.Run("Benchmark__Xdr________Encode", Benchmark__Xdr________Encode)
 	t.Run("Benchmark__Sereal_____Encode", Benchmark__Sereal_____Encode)
 
-	logT(nil, "-------------------------------\n")
+	benchmarkDivider()
 	t.Run("Benchmark__Msgpack____Decode", Benchmark__Msgpack____Decode)
 	t.Run("Benchmark__Binc_______Decode", Benchmark__Binc_______Decode)
 	t.Run("Benchmark__Simple_____Decode", Benchmark__Simple_____Decode)
