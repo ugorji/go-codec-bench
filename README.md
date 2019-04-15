@@ -92,9 +92,9 @@ What you should notice:
   usability and binary-size increases, as performance is already extremely good 
   without the codecgen path.
   
-See  https://github.com/ugorji/go-codec-bench/blob/master/bench.out for latest run of bench.sh as of 2017-11-20
+See  https://github.com/ugorji/go-codec-bench/blob/master/bench.out.txt for latest run of bench.sh as of 2017-11-20
 
-* snippet of bench.out, running without codecgen *
+* snippet of bench.out.txt, running without codecgen *
 ```
 BenchmarkCodecXSuite/options-false.../Benchmark__Msgpack____Encode-8         	   10000	    183961 ns/op	   10224 B/op	      75 allocs/op
 BenchmarkCodecXSuite/options-false.../Benchmark__Binc_______Encode-8         	   10000	    206362 ns/op	   12551 B/op	      80 allocs/op
@@ -119,7 +119,7 @@ BenchmarkCodecXSuite/options-false.../Benchmark__JsonIter___Decode-8         	  
 BenchmarkCodecXSuite/options-false.../Benchmark__Bson_______Decode-8         	    2000	   1146851 ns/op	  373121 B/op	   15703 allocs/op
 ```
 
-* snippet of bench.out, running with codecgen *
+* snippet of bench.out.txt, running with codecgen *
 ```
 BenchmarkCodecXGenSuite/options-false.../Benchmark__Msgpack____Encode-8         	   10000	    124729 ns/op	    6224 B/op	       7 allocs/op
 BenchmarkCodecXGenSuite/options-false.../Benchmark__Binc_______Encode-8         	   10000	    119745 ns/op	    6256 B/op	       7 allocs/op
