@@ -30,12 +30,12 @@ Other codecs compared include:
 # Data
 
 The data being serialized is a `TestStruc` randomly generated values.
-See https://github.com/ugorji/go-codec-bench/blob/master/values_test.go for the
+See https://github.com/ugorji/go-codec-bench/blob/master/codec/values_test.go for the
 definition of the TestStruc.
 
 # Run Benchmarks
 
-See  https://github.com/ugorji/go-codec-bench/blob/master/bench.sh 
+See  https://github.com/ugorji/go-codec-bench/blob/master/codec/bench.sh 
 for how to download the external libraries which we benchmark against,
 generate the files for the types when needed, 
 and run the suite of tests.
