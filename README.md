@@ -47,6 +47,8 @@ The 3 suite of benchmarks are
   - CodecXSuite
 
 ```
+# Note that `bench.sh` may be in the codec sub-directory, and should be run from there.
+
 # download the code and all its dependencies
 ./bench.sh -d
 
