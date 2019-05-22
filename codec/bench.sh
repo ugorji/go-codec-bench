@@ -12,7 +12,8 @@ _go_get() {
        gopkg.in/mgo.v2/bson \
        gopkg.in/vmihailenco/msgpack.v2 \
        github.com/json-iterator/go \
-       github.com/mailru/easyjson/...
+       github.com/mailru/easyjson/... \
+       github.com/fxamacker/cbor
 }
 
 # add generated tag to the top of each file

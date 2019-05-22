@@ -12,6 +12,7 @@ import (
 	gcbor "bitbucket.org/bodhisnarkva/cbor/go" // gcbor "code.google.com/p/cbor/go"
 	"github.com/Sereal/Sereal/Go/sereal"
 	"github.com/davecgh/go-xdr/xdr2"
+	fxcbor "github.com/fxamacker/cbor"
 	"github.com/json-iterator/go"
 	"gopkg.in/mgo.v2/bson"                     //"labix.org/v2/mgo/bson"
 	vmsgpack "gopkg.in/vmihailenco/msgpack.v2" //"github.com/vmihailenco/msgpack"
@@ -43,6 +44,7 @@ func benchXPreInit() {
 		benchChecker{"json-iter", fnJsonIterEncodeFn, fnJsonIterDecodeFn},
 		benchChecker{"v-msgpack", fnVMsgpackEncodeFn, fnVMsgpackDecodeFn},
 		benchChecker{"bson", fnBsonEncodeFn, fnBsonDecodeFn},
+		benchChecker{"fxcbor", fnFxcborEncodeFn, fnFxcborDecodeFn},
 		// place codecs with issues at the end, so as not to make results too ugly
 		benchChecker{"gcbor", fnGcborEncodeFn, fnGcborDecodeFn}, // this logs fat ugly message, but we log.SetOutput(ioutil.Discard)
 		benchChecker{"xdr", fnXdrEncodeFn, fnXdrDecodeFn},
@@ -119,6 +121,26 @@ func fnGcborDecodeFn(buf []byte, ts interface{}) error {
 	return gcbor.NewDecoder(bytes.NewReader(buf)).Decode(ts)
 }
 
+func fnFxcborEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
+	var opts fxcbor.EncOptions
+	if testCanonical {
+		opts.Canonical = true
+	}
+	if testUseIoEncDec >= 0 {
+		buf := fnBenchmarkByteBuf(bsIn)
+		err = fxcbor.NewEncoder(buf, opts).Encode(ts)
+		return buf.Bytes(), err
+	}
+	return fxcbor.Marshal(ts, opts)
+}
+
+func fnFxcborDecodeFn(buf []byte, ts interface{}) error {
+	if testUseIoEncDec >= 0 {
+		return fxcbor.NewDecoder(bytes.NewReader(buf)).Decode(ts)
+	}
+	return fxcbor.Unmarshal(buf, ts)
+}
+
 func Benchmark__JsonIter___Encode(b *testing.B) {
 	fnBenchmarkEncode(b, "jsoniter", benchTs, fnJsonIterEncodeFn)
 }
@@ -143,6 +165,14 @@ func Benchmark__VMsgpack___Encode(b *testing.B) {
 
 func Benchmark__VMsgpack___Decode(b *testing.B) {
 	fnBenchmarkDecode(b, "v-msgpack", benchTs, fnVMsgpackEncodeFn, fnVMsgpackDecodeFn, fnBenchNewTs)
+}
+
+func Benchmark__Fxcbor_____Encode(b *testing.B) {
+	fnBenchmarkEncode(b, "fxcbor", benchTs, fnFxcborEncodeFn)
+}
+
+func Benchmark__Fxcbor_____Decode(b *testing.B) {
+	fnBenchmarkDecode(b, "fxcbor", benchTs, fnFxcborEncodeFn, fnFxcborDecodeFn, fnBenchNewTs)
 }
 
 func Benchmark__Gcbor______Encode(b *testing.B) {

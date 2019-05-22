@@ -30,6 +30,7 @@ func benchmarkCodecXGenGroup(t *testing.B) {
 	// t.Run("Benchmark__Gcbor______Encode", Benchmark__Gcbor______Encode)
 	// t.Run("Benchmark__Xdr________Encode", Benchmark__Xdr________Encode)
 	t.Run("Benchmark__Sereal_____Encode", Benchmark__Sereal_____Encode)
+	t.Run("Benchmark__Fxcbor_____Encode", Benchmark__Fxcbor_____Encode)
 
 	benchmarkDivider()
 	t.Run("Benchmark__Msgpack____Decode", Benchmark__Msgpack____Decode)
@@ -48,6 +49,7 @@ func benchmarkCodecXGenGroup(t *testing.B) {
 	// t.Run("Benchmark__Gcbor______Decode", Benchmark__Gcbor______Decode)
 	// t.Run("Benchmark__Xdr________Decode", Benchmark__Xdr________Decode)
 	// t.Run("Benchmark__Sereal_____Decode", Benchmark__Sereal_____Decode)
+	t.Run("Benchmark__Fxcbor_____Decode", Benchmark__Fxcbor_____Decode)
 }
 
 func BenchmarkCodecXGenSuite(t *testing.B) { benchmarkSuite(t, benchmarkCodecXGenGroup) }
