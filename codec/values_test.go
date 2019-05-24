@@ -33,6 +33,8 @@ type wrapString string
 type wrapUint64Slice []wrapUint64
 type wrapStringSlice []wrapString
 
+// some other types
+
 type stringUint64T struct {
 	S string
 	U uint64
