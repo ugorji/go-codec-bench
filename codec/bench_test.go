@@ -3,11 +3,37 @@
 
 package codec
 
+// bench_test is the "helper" file for all benchmarking tests.
+//
+// There are also benchmarks which depend on just codec and the stdlib,
+// and benchmarks which depend on external libraries.
+// It is an explicit goal that you can run benchmarks without external
+// dependencies (which is why the 'x' build tag was explicitly introduced).
+//
+// There are 2 ways of running tests:
+//    - generated
+//    - not generated
+//
+// Consequently, we have 4 groups:
+//    - codec_bench   (gen, !gen)
+//    - stdlib_bench  (!gen only)
+//    - x_bench       (!gen only)
+//    - x_bench_gen   (gen only)
+//
+// We also have 4 matching suite files.
+//    - z_all_bench (rename later to z_all_codec_bench???)
+//    - z_all_stdlib_bench
+//    - z_all_x_bench
+//    - z_all_x_bench_gen
+//
+// Finally, we have a single test (TestBenchInit) that
+// will log information about whether each format can
+// encode or not, how long to encode (unscientifically),
+// and the encode size.
+//
+// This test MUST be run always, as it calls init() internally
+
 import (
-	"bytes"
-	"encoding/gob"
-	"encoding/json"
-	"encoding/xml"
 	"reflect"
 	"runtime"
 	"testing"
@@ -17,16 +43,16 @@ import (
 // Sample way to run:
 // go test -bi -bv -bd=1 -benchmem -bench=.
 
-func init() {
-	testPreInitFns = append(testPreInitFns, benchPreInit)
-	testPostInitFns = append(testPostInitFns, benchPostInit)
-}
+const (
+	benchUnscientificRes = true
+	benchVerify          = true
+	benchRecover         = true
+	benchShowJsonOnError = true
+)
 
 var (
-	benchTs *TestStruc
-
-	approxSize int
-
+	benchTs       *TestStruc
+	approxSize    int
 	benchCheckers []benchChecker
 )
 
@@ -40,56 +66,57 @@ type benchChecker struct {
 	decodefn benchDecFn
 }
 
+func init() {
+	testPreInitFns = append(testPreInitFns, benchPreInit)
+	// testPostInitFns = append(testPostInitFns, codecbenchPostInit)
+}
+
+func benchPreInit() {
+	benchTs = newTestStruc(testDepth, testNumRepeatString, true, !testSkipIntf, testMapStringKeyOnly)
+	approxSize = approxDataSize(reflect.ValueOf(benchTs)) * 3 / 2 // multiply by 1.5 to appease msgp, and prevent alloc
+	// bytesLen := 1024 * 4 * (testDepth + 1) * (testDepth + 1)
+	// if bytesLen < approxSize {
+	// 	bytesLen = approxSize
+	// }
+}
+
 func benchReinit() {
 	benchCheckers = nil
 }
 
-func benchPreInit() {
-	benchTs = newTestStruc(benchDepth, testNumRepeatString, true, !testSkipIntf, benchMapStringKeyOnly)
-	approxSize = approxDataSize(reflect.ValueOf(benchTs)) * 3 / 2 // multiply by 1.5 to appease msgp, and prevent alloc
-	// bytesLen := 1024 * 4 * (benchDepth + 1) * (benchDepth + 1)
-	// if bytesLen < approxSize {
-	// 	bytesLen = approxSize
-	// }
-
-	benchCheckers = append(benchCheckers,
-		benchChecker{"msgpack", fnMsgpackEncodeFn, fnMsgpackDecodeFn},
-		benchChecker{"binc", fnBincEncodeFn, fnBincDecodeFn},
-		benchChecker{"simple", fnSimpleEncodeFn, fnSimpleDecodeFn},
-		benchChecker{"cbor", fnCborEncodeFn, fnCborDecodeFn},
-		benchChecker{"json", fnJsonEncodeFn, fnJsonDecodeFn},
-		benchChecker{"std-json", fnStdJsonEncodeFn, fnStdJsonDecodeFn},
-		benchChecker{"gob", fnGobEncodeFn, fnGobDecodeFn},
-		benchChecker{"std-xml", fnStdXmlEncodeFn, fnStdXmlDecodeFn},
-	)
+func benchmarkDivider() {
+	// logTv(nil, "-------------------------------\n")
+	println()
 }
 
-func benchPostInit() {
-	if benchDoInitBench {
-		runBenchInit()
+// func Test0(t *testing.T) {
+// 	testOnce.Do(testInitAll)
+// }
+
+func TestBenchInit(t *testing.T) {
+	testOnce.Do(testInitAll)
+	if !testing.Verbose() {
+		return
 	}
-}
-
-func runBenchInit() {
-	// logT(nil, "..............................................")
-	logT(nil, "BENCHMARK INIT: %v", time.Now())
-	// logT(nil, "To run full benchmark comparing encodings, use: \"go test -bench=.\"")
-	logT(nil, "Benchmark: ")
-	logT(nil, "\tStruct recursive Depth:             %d", benchDepth)
+	// t.Logf("..............................................")
+	t.Logf("BENCHMARK INIT: %v", time.Now())
+	// t.Logf("To run full benchmark comparing encodings, use: \"go test -bench=.\"")
+	t.Logf("Benchmark: ")
+	t.Logf("\tStruct recursive Depth:             %d", testDepth)
 	if approxSize > 0 {
-		logT(nil, "\tApproxDeepSize Of benchmark Struct: %d bytes", approxSize)
+		t.Logf("\tApproxDeepSize Of benchmark Struct: %d bytes", approxSize)
 	}
 	if benchUnscientificRes {
-		logT(nil, "Benchmark One-Pass Run (with Unscientific Encode/Decode times): ")
+		t.Logf("Benchmark One-Pass Run (with Unscientific Encode/Decode times): ")
 	} else {
-		logT(nil, "Benchmark One-Pass Run:")
+		t.Logf("Benchmark One-Pass Run:")
 	}
 	for _, bc := range benchCheckers {
-		doBenchCheck(bc.name, bc.encodefn, bc.decodefn)
+		doBenchCheck(t, bc.name, bc.encodefn, bc.decodefn)
 	}
-	logT(nil, "..............................................")
-	if benchInitDebug {
-		logT(nil, "<<<<====>>>> depth: %v, ts: %#v\n", benchDepth, benchTs)
+	if testVerbose {
+		t.Logf("..............................................")
+		t.Logf("<<<<====>>>> depth: %v, ts: %#v\n", testDepth, benchTs)
 	}
 	runtime.GC()
 	time.Sleep(100 * time.Millisecond)
@@ -105,35 +132,45 @@ func fnBenchNewTs() interface{} {
 
 // const benchCheckDoDeepEqual = false
 
-func benchRecoverPanic(t interface{}) {
-	if r := recover(); r != nil {
-		logT(t, "panic: %v\n", r)
+func benchRecoverPanic(t *testing.B) {
+	if benchRecover {
+		if r := recover(); r != nil {
+			t.Logf("(recovered) panic: %v\n", r)
+		}
 	}
 }
 
-func doBenchCheck(name string, encfn benchEncFn, decfn benchDecFn) {
+func benchRecoverPanicT(t *testing.T) {
+	if benchRecover {
+		if r := recover(); r != nil {
+			t.Logf("(recovered) panic: %v\n", r)
+		}
+	}
+}
+
+func doBenchCheck(t *testing.T, name string, encfn benchEncFn, decfn benchDecFn) {
 	// if benchUnscientificRes {
-	// 	logT(nil, "-------------- %s ----------------", name)
+	// 	t.Logf("-------------- %s ----------------", name)
 	// }
-	defer benchRecoverPanic(nil)
+	defer benchRecoverPanicT(t)
 	runtime.GC()
 	tnow := time.Now()
 	buf, err := encfn(benchTs, nil)
 	if err != nil {
-		logT(nil, "\t%10s: **** Error encoding benchTs: %v", name, err)
+		t.Logf("\t%10s: **** Error encoding benchTs: %v", name, err)
 		return
 	}
 	encDur := time.Since(tnow)
 	encLen := len(buf)
 	runtime.GC()
 	if !benchUnscientificRes {
-		logT(nil, "\t%10s: len: %d bytes\n", name, encLen)
+		t.Logf("\t%10s: len: %d bytes\n", name, encLen)
 		return
 	}
 	tnow = time.Now()
 	var ts2 TestStruc
 	if err = decfn(buf, &ts2); err != nil {
-		logT(nil, "\t%10s: **** Error decoding into new TestStruc: %v", name, err)
+		t.Logf("\t%10s: **** Error decoding into new TestStruc: %v", name, err)
 		return
 	}
 	decDur := time.Since(tnow)
@@ -141,9 +178,16 @@ func doBenchCheck(name string, encfn benchEncFn, decfn benchDecFn) {
 	if benchVerify {
 		err = deepEqual(benchTs, &ts2)
 		if err == nil {
-			logT(nil, "\t%10s: len: %d bytes,\t encode: %v,\t decode: %v,\tencoded = decoded", name, encLen, encDur, decDur)
+			t.Logf("\t%10s: len: %d bytes,\t encode: %v,\t decode: %v,\tencoded == decoded", name, encLen, encDur, decDur)
 		} else {
-			logT(nil, "\t%10s: len: %d bytes,\t encode: %v,\t decode: %v,\tencoded != decoded: %v", name, encLen, encDur, decDur, err)
+			t.Logf("\t%10s: len: %d bytes,\t encode: %v,\t decode: %v,\tencoded != decoded: %v", name, encLen, encDur, decDur, err)
+			// if benchShowJsonOnError && strings.Contains(name, "json") {
+			// 	fmt.Printf("\n\n%s\n\n", buf)
+			// 	//fmt.Printf("\n\n%#v\n\n", benchTs)
+			// 	//fmt.Printf("\n\n%#v\n\n", &ts2)
+			// 	return
+			// }
+
 			// if strings.Contains(name, "json") {
 			// 	println(">>>>>")
 			// 	f1, _ := os.Create("1.out")
@@ -162,16 +206,16 @@ func doBenchCheck(name string, encfn benchEncFn, decfn benchDecFn) {
 			// 	f2.Close()
 			// 	f3.Close()
 			// }
-			// logT(nil, "\t: err: %v,\n benchTs: %#v\n\n, ts2: %#v\n\n", err, benchTs, ts2) // TODO: remove
-			// logT(nil, "BenchVerify: Error comparing en|decoded TestStruc: %v", err)
+			// t.Logf("\t: err: %v,\n benchTs: %#v\n\n, ts2: %#v\n\n", err, benchTs, ts2) // TODO: remove
+			// t.Logf("BenchVerify: Error comparing en|decoded TestStruc: %v", err)
 			// return
-			// logT(nil, "BenchVerify: Error comparing benchTs: %v\n--------\n%v\n--------\n%v", err, benchTs, ts2)
+			// t.Logf("BenchVerify: Error comparing benchTs: %v\n--------\n%v\n--------\n%v", err, benchTs, ts2)
 			// if strings.Contains(name, "json") {
-			// 	logT(nil, "\n\tDECODED FROM\n--------\n%s", buf)
+			// 	t.Logf("\n\tDECODED FROM\n--------\n%s", buf)
 			// }
 		}
 	} else {
-		logT(nil, "\t%10s: len: %d bytes,\t encode: %v,\t decode: %v", name, encLen, encDur, decDur)
+		t.Logf("\t%10s: len: %d bytes,\t encode: %v,\t decode: %v", name, encLen, encDur, decDur)
 	}
 	return
 }
@@ -189,7 +233,7 @@ func fnBenchmarkEncode(b *testing.B, encName string, ts interface{}, encfn bench
 		}
 	}
 	if err != nil {
-		logT(b, "Error encoding benchTs: %s: %v", encName, err)
+		b.Logf("Error encoding benchTs: %s: %v", encName, err)
 		b.FailNow()
 	}
 }
@@ -202,22 +246,20 @@ func fnBenchmarkDecode(b *testing.B, encName string, ts interface{},
 	bs := make([]byte, 0, approxSize)
 	buf, err := encfn(ts, bs)
 	if err != nil {
-		logT(b, "Error encoding benchTs: %s: %v", encName, err)
+		b.Logf("Error encoding benchTs: %s: %v", encName, err)
 		b.FailNow()
 	}
-	if false && benchVerify { // do not do benchVerify during decode
-		// ts2 := newfn()
-		ts1 := ts.(*TestStruc)
-		ts2 := new(TestStruc)
-		if err = decfn(buf, ts2); err != nil {
-			logT(b, "BenchVerify: Error decoding benchTs: %s: %v", encName, err)
-			b.FailNow()
-		}
-		if err = deepEqual(ts1, ts2); err != nil {
-			logT(b, "BenchVerify: Error comparing benchTs: %s: %v", encName, err)
-			b.FailNow()
-		}
-	}
+	// if false && benchVerify { // do not do benchVerify during decode
+	// 	// ts2 := newfn()
+	// 	ts1 := ts.(*TestStruc)
+	// 	ts2 := new(TestStruc)
+	// 	if err = decfn(buf, ts2); err != nil {
+	// 		failT(b, "BenchVerify: Error decoding benchTs: %s: %v", encName, err)
+	// 	}
+	// 	if err = deepEqual(ts1, ts2); err != nil {
+	// 		failT(b, "BenchVerify: Error comparing benchTs: %s: %v", encName, err)
+	// 	}
+	// }
 	runtime.GC()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -227,153 +269,7 @@ func fnBenchmarkDecode(b *testing.B, encName string, ts interface{},
 		}
 	}
 	if err != nil {
-		logT(b, "Error decoding into new TestStruc: %s: %v", encName, err)
+		b.Logf("Error decoding into new TestStruc: %s: %v", encName, err)
 		b.FailNow()
 	}
-}
-
-// ------------ tests below
-
-func fnMsgpackEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
-	return sTestCodecEncode(ts, bsIn, fnBenchmarkByteBuf, testMsgpackH, &testMsgpackH.BasicHandle)
-}
-
-func fnMsgpackDecodeFn(buf []byte, ts interface{}) error {
-	return sTestCodecDecode(buf, ts, testMsgpackH, &testMsgpackH.BasicHandle)
-}
-
-func fnBincEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
-	return sTestCodecEncode(ts, bsIn, fnBenchmarkByteBuf, testBincH, &testBincH.BasicHandle)
-}
-
-func fnBincDecodeFn(buf []byte, ts interface{}) error {
-	return sTestCodecDecode(buf, ts, testBincH, &testBincH.BasicHandle)
-}
-
-func fnSimpleEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
-	return sTestCodecEncode(ts, bsIn, fnBenchmarkByteBuf, testSimpleH, &testSimpleH.BasicHandle)
-}
-
-func fnSimpleDecodeFn(buf []byte, ts interface{}) error {
-	return sTestCodecDecode(buf, ts, testSimpleH, &testSimpleH.BasicHandle)
-}
-
-func fnCborEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
-	return sTestCodecEncode(ts, bsIn, fnBenchmarkByteBuf, testCborH, &testCborH.BasicHandle)
-}
-
-func fnCborDecodeFn(buf []byte, ts interface{}) error {
-	return sTestCodecDecode(buf, ts, testCborH, &testCborH.BasicHandle)
-}
-
-func fnJsonEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
-	return sTestCodecEncode(ts, bsIn, fnBenchmarkByteBuf, testJsonH, &testJsonH.BasicHandle)
-}
-
-func fnJsonDecodeFn(buf []byte, ts interface{}) error {
-	return sTestCodecDecode(buf, ts, testJsonH, &testJsonH.BasicHandle)
-}
-
-func fnGobEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
-	buf := fnBenchmarkByteBuf(bsIn)
-	err := gob.NewEncoder(buf).Encode(ts)
-	return buf.Bytes(), err
-}
-
-func fnGobDecodeFn(buf []byte, ts interface{}) error {
-	return gob.NewDecoder(bytes.NewReader(buf)).Decode(ts)
-}
-
-func fnStdXmlEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
-	buf := fnBenchmarkByteBuf(bsIn)
-	err := xml.NewEncoder(buf).Encode(ts)
-	return buf.Bytes(), err
-}
-
-func fnStdXmlDecodeFn(buf []byte, ts interface{}) error {
-	return xml.NewDecoder(bytes.NewReader(buf)).Decode(ts)
-}
-
-func fnStdJsonEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
-	if testUseIoEncDec >= 0 {
-		buf := fnBenchmarkByteBuf(bsIn)
-		err := json.NewEncoder(buf).Encode(ts)
-		return buf.Bytes(), err
-	}
-	return json.Marshal(ts)
-}
-
-func fnStdJsonDecodeFn(buf []byte, ts interface{}) error {
-	if testUseIoEncDec >= 0 {
-		return json.NewDecoder(bytes.NewReader(buf)).Decode(ts)
-	}
-	return json.Unmarshal(buf, ts)
-}
-
-// ----------- DECODE ------------------
-
-func Benchmark__Msgpack____Encode(b *testing.B) {
-	fnBenchmarkEncode(b, "msgpack", benchTs, fnMsgpackEncodeFn)
-}
-
-func Benchmark__Binc_______Encode(b *testing.B) {
-	fnBenchmarkEncode(b, "binc", benchTs, fnBincEncodeFn)
-}
-
-func Benchmark__Simple_____Encode(b *testing.B) {
-	fnBenchmarkEncode(b, "simple", benchTs, fnSimpleEncodeFn)
-}
-
-func Benchmark__Cbor_______Encode(b *testing.B) {
-	fnBenchmarkEncode(b, "cbor", benchTs, fnCborEncodeFn)
-}
-
-func Benchmark__Json_______Encode(b *testing.B) {
-	fnBenchmarkEncode(b, "json", benchTs, fnJsonEncodeFn)
-}
-
-func Benchmark__Std_Json___Encode(b *testing.B) {
-	fnBenchmarkEncode(b, "std-json", benchTs, fnStdJsonEncodeFn)
-}
-
-func Benchmark__Gob________Encode(b *testing.B) {
-	fnBenchmarkEncode(b, "gob", benchTs, fnGobEncodeFn)
-}
-
-func Benchmark__Std_Xml____Encode(b *testing.B) {
-	fnBenchmarkEncode(b, "std-xml", benchTs, fnStdXmlEncodeFn)
-}
-
-// ----------- DECODE ------------------
-
-func Benchmark__Msgpack____Decode(b *testing.B) {
-	fnBenchmarkDecode(b, "msgpack", benchTs, fnMsgpackEncodeFn, fnMsgpackDecodeFn, fnBenchNewTs)
-}
-
-func Benchmark__Binc_______Decode(b *testing.B) {
-	fnBenchmarkDecode(b, "binc", benchTs, fnBincEncodeFn, fnBincDecodeFn, fnBenchNewTs)
-}
-
-func Benchmark__Simple_____Decode(b *testing.B) {
-	fnBenchmarkDecode(b, "simple", benchTs, fnSimpleEncodeFn, fnSimpleDecodeFn, fnBenchNewTs)
-}
-
-func Benchmark__Cbor_______Decode(b *testing.B) {
-	fnBenchmarkDecode(b, "cbor", benchTs, fnCborEncodeFn, fnCborDecodeFn, fnBenchNewTs)
-}
-
-func Benchmark__Json_______Decode(b *testing.B) {
-	fnBenchmarkDecode(b, "json", benchTs, fnJsonEncodeFn, fnJsonDecodeFn, fnBenchNewTs)
-}
-
-func Benchmark__Std_Json___Decode(b *testing.B) {
-	fnBenchmarkDecode(b, "std-json", benchTs, fnStdJsonEncodeFn, fnStdJsonDecodeFn, fnBenchNewTs)
-}
-
-func Benchmark__Gob________Decode(b *testing.B) {
-	fnBenchmarkDecode(b, "gob", benchTs, fnGobEncodeFn, fnGobDecodeFn, fnBenchNewTs)
-}
-
-func Benchmark__Std_Xml____Decode(b *testing.B) {
-	fnBenchmarkDecode(b, "std-xml", benchTs, fnStdXmlEncodeFn, fnStdXmlDecodeFn, fnBenchNewTs)
 }

@@ -1,4 +1,5 @@
 // +build x
+// +build !generated
 
 // Copyright (c) 2012-2018 Ugorji Nwoke. All rights reserved.
 // Use of this source code is governed by a MIT license found in the LICENSE file.
@@ -134,11 +135,8 @@ func fnGcborDecodeFn(buf []byte, ts interface{}) error {
 
 func fnFxcborEncodeFn(ts interface{}, bsIn []byte) (bs []byte, err error) {
 	var opts fxcbor.EncOptions
-	if testCanonical {
-		opts.Canonical = true
-	}
 	if testUseIoEncDec >= 0 {
-		buf := fnBenchmarkByteBuf(bsIn)
+		buf := bytes.NewBuffer(bsIn[:0]) // new(bytes.Buffer)
 		err = fxcbor.NewEncoder(buf, opts).Encode(ts)
 		return buf.Bytes(), err
 	}
