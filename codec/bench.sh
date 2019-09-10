@@ -174,6 +174,7 @@ _suite_very_quick_json_only_profile() {
 _suite_cbor() {
     local t="alltests x"
     local a=( "" "safe"  "notfastpath" "notfastpath safe" )
+    echo ">>>> cbor bench"
     for i in "${a[@]}"
     do
         echo ">>>> bench TAGS: '$t $i' SUITE: BenchmarkCodecAllCborSuite"
@@ -192,6 +193,7 @@ _usage() {
     printf "\t-tx tests (show stats for each format and whether encoded == decoded); if x, do external also\n"
     printf "\t-sgx run test suite for codec; if g, use generated files; if x, do external also\n"
     printf "\t-jqp run test suite for [json, json-quick, json-profile]\n"
+    printf "\t-o run test suite for cbor\n"
 }
 
 _main() {
