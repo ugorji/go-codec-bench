@@ -78,6 +78,15 @@ func benchPreInit() {
 	// if bytesLen < approxSize {
 	// 	bytesLen = approxSize
 	// }
+
+	// use zerocopy for the benchmarks, for best performance
+	const zeroCopyVal = true
+
+	testJsonH.ZeroCopy = zeroCopyVal
+	testCborH.ZeroCopy = zeroCopyVal
+	testMsgpackH.ZeroCopy = zeroCopyVal
+	testSimpleH.ZeroCopy = zeroCopyVal
+	testBincH.ZeroCopy = zeroCopyVal
 }
 
 func benchReinit() {
