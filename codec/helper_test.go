@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2015 Ugorji Nwoke. All rights reserved.
+// Copyright (c) 2012-2020 Ugorji Nwoke. All rights reserved.
 // Use of this source code is governed by a MIT license found in the LICENSE file.
 
 package codec
@@ -13,9 +13,11 @@ import (
 
 // --- these functions are used by both benchmarks and tests
 
+var errDeepEqualNotMatch = errors.New("Not Match")
+
 func deepEqual(v1, v2 interface{}) (err error) {
 	if !reflect.DeepEqual(v1, v2) {
-		err = errors.New("Not Match")
+		err = errDeepEqualNotMatch
 	}
 	return
 }

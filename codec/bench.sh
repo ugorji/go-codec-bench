@@ -4,16 +4,20 @@
 _go_get() {
     # Note: keep "github.com/ugorji/go/codec" in quotes, as script pushing to github will replace it appropriately
     ${go[@]} get -u \
-       "github.com/ugorji/go/codec" "github.com/ugorji/go/codec"/codecgen \
+       "github.com/ugorji/go/codec" \
        github.com/tinylib/msgp/msgp github.com/tinylib/msgp \
        github.com/pquerna/ffjson/ffjson github.com/pquerna/ffjson \
        github.com/Sereal/Sereal/Go/sereal \
        bitbucket.org/bodhisnarkva/cbor/go \
+       github.com/fxamacker/cbor/v2 \
        github.com/davecgh/go-xdr/xdr2 \
        gopkg.in/mgo.v2/bson \
        gopkg.in/vmihailenco/msgpack.v2 \
        github.com/json-iterator/go \
        go.mongodb.org/mongo-driver/bson \
+       github.com/globalsign/mgo/bson \
+       github.com/goccy/go-json \
+       github.com/vmihailenco/msgpack/v4 \
        github.com/mailru/easyjson/...
 }
 
@@ -45,11 +49,8 @@ _gen() {
     local zsfx="_generated_test.go"
     # local z=`pwd`
     # z=${z%%/src/*}
-    # Note: ensure you run the codecgen for this codebase
     # NOTE: MARKER: ffjson has been generating bad uncompilable code, so ignore it for now
     cp values_test.go v.go &&
-        echo "codecgen ..." &&
-        codecgen -nx -ta=false -rt codecgen -t 'codecgen generated' -o values_codecgen${zsfx} -d 19780 v.go &&
         echo "msgp ... " &&
         msgp -unexported -tests=false -o=m9.go -file=v.go &&
         _prependbt m9.go values_msgp${zsfx} &&
@@ -69,7 +70,7 @@ _gen() {
 # run the full suite of tests
 #
 # Basically, its a sequence of
-# ${go[@]} test -tags "alltests x codec.safe codecgen generated" -bench "CodecSuite or AllSuite or XSuite" -benchmem
+# ${go[@]} test -tags "alltests x codec.safe" -bench "CodecSuite or AllSuite or XSuite" -benchmem
 #
 
 _suite_tests() {
@@ -99,7 +100,7 @@ _suite_any() {
     local g="$2"
     local b="$3"
     shift 3
-    local a=( "" "codec.safe"  "codec.notfastpath" "codec.notfastpath codec.safe" "codecgen" "codecgen codec.safe")
+    local a=( "" "codec.safe"  "codec.notfastpath" "codec.notfastpath codec.safe" )
     if [[ "$g" = "g" ]]; then a=( "generated" "generated codec.safe"); fi
     for i in "${a[@]}"; do
         echo ">>>> bench TAGS: 'alltests $x $i' SUITE: $b"
@@ -107,67 +108,17 @@ _suite_any() {
     done 
 }
 
-# _suite() {
-#     local t="alltests x"
-#     local a=( "" "codec.safe"  "codec.notfastpath" "codec.notfastpath codec.safe" "codecgen" "codecgen codec.safe")
-#     for i in "${a[@]}"
-#     do
-#         echo ">>>> bench TAGS: '$t $i' SUITE: BenchmarkCodecXSuite"
-#         ${go[@]} test "${zargs[@]}" -tags "$t $i" -bench BenchmarkCodecXSuite -benchmem "$@"
-#     done
-# }
-
-# _suite_gen() {
-#     local t="alltests x"
-#     local b=( "generated" "generated codec.safe")
-#     for i in "${b[@]}"
-#     do
-#         echo ">>>> bench TAGS: '$t $i' SUITE: BenchmarkCodecXGenSuite"
-#         ${go[@]} test "${zargs[@]}" -tags "$t $i" -bench BenchmarkCodecXGenSuite -benchmem "$@"
-#     done
-# }
-
-# _suite_json() {
-#     local t="alltests x"
-#     local a=( "" "codec.safe"  "codec.notfastpath" "codec.notfastpath codec.safe" "codecgen" "codecgen codec.safe")
-#     for i in "${a[@]}"
-#     do
-#         echo ">>>> bench TAGS: '$t $i' SUITE: BenchmarkCodecQuickAllJsonSuite"
-#         ${go[@]} test "${zargs[@]}" -tags "$t $i" -bench BenchmarkCodecQuickAllJsonSuite -benchmem "$@"
-#     done
-# }
-
-# _suite_very_quick_json() {
-#     # Quickly get numbers for json, stdjson, jsoniter and json (codecgen)"
-#     echo ">>>> very quick json bench"
-#     ${go[@]} test "${zargs[@]}" -tags "alltests x" -bench "__(Json|Std_Json|JsonIter)__" -benchmem "$@"
-#     echo
-#     ${go[@]} test "${zargs[@]}" -tags "alltests codecgen" -bench "__Json____" -benchmem "$@"
-# }
-
-# _suite_very_quick_json_via_suite() {
-#     # Quickly get numbers for json, stdjson, jsoniter and json (codecgen)"
-#     echo ">>>> very quick json bench"
-#     local prefix="BenchmarkCodecVeryQuickAllJsonSuite/json-all-bd1......../"
-#     ${go[@]} test "${zargs[@]}" -tags "alltests x" -bench BenchmarkCodecVeryQuickAllJsonSuite -benchmem "$@" |
-#         sed -e "s+^$prefix++"
-#     echo "---- CODECGEN RESULTS ----"
-#     ${go[@]} test "${zargs[@]}" -tags "x generated" -bench "__(Json|Easyjson)__" -benchmem "$@"
-# }
-
 _suite_very_quick_json_non_suite() {
-    # Quickly get numbers for json, stdjson, jsoniter and json (codecgen)"
     local t="${1:-x}"
     shift
     echo ">>>> very quick json bench"
-    # local tags=( "x" "x generated" )
     local tags=("${t}" "${t} generated" "${t} codec.safe" "${t} generated codec.safe" "${t} codec.notfastpath")
     local js=( En De )
     for t in "${tags[@]}"; do
         echo "---- tags: ${t} ----"
         local b="Json"
         if [[ "${t}" =~ x && ! "${t}" =~ safe && ! "${t}" =~ notfastpath ]]; then
-            b="Json|Std_Json|JsonIter"
+            b="Json|Std_Json|JsonIter|GoccyJson"
             if [[ "${t}" =~ generated ]]; then b="Json|Easyjson"; fi
         fi            
         for j in "${js[@]}"; do
@@ -195,29 +146,15 @@ _suite_trim_output() {
 
 _bench_dot_out_dot_txt() {
   printf "**** STATS ****\n\n"
-  ./bench.sh -tx  # (stats)
-  printf "**** SUITE ****\n\n"
-  ./bench.sh -sx  # (not codecgen)
-  printf "**** SUITE (WITH CODECGEN) ****\n\n"
-  ./bench.sh -sgx # (codecgen)
+  ./bench.sh -tx
+  printf "**** SUITE **** (without libs doing code generation)\n\n"
+  ./bench.sh -sx
+  printf "**** SUITE **** (with libs doing code generation) ****\n\n"
+  ./bench.sh -sgx
 }
 
 _suite_debugging() {
     _suite_very_quick_benchmark "$@"
-    
-    # local cg="n" # n = no codecgen, c = codecgen; options are c, n, cn
-    # local js=( De ) # or: ( _ ) ( En ) ( De ) ( En De )
-    # for j in ${js[@]}; do
-    #     if [[ ${cg} =~ "c" ]]; then
-    #         echo "---- codecgen ----"
-    #         ${go[@]} test "${zargs[@]}" -tags "generated" -bench "__(Json)__.*${j}"  -benchtime 2s -benchmem "$@"
-    #     fi
-    #     if [[ ${cg} =~ "n" ]]; then
-    #         echo "---- no codecgen ----"
-    #         ${go[@]} test "${zargs[@]}" -tags "" -bench "__(Json)__.*${j}"  -benchtime 2s -benchmem "$@"
-    #     fi
-    #     echo
-    # done
 }
 
 _usage() {
