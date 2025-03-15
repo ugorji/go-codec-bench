@@ -39,6 +39,15 @@ _sed_in_file() {
     esac
 }
 
+_check_shared_files() {
+    local d=${1:-../../go/codec}
+    for i in values_test.go init_test.go codec_init_test.go bench_test.go codec_bench_test.go; do
+        echo $i
+        diff -s $i $d/$i
+        echo '........................'
+    done
+}
+
 # To run the full suite of benchmarks, including executing against the external frameworks
 # listed above, you MUST first run code generation for the frameworks that support it.
 #
@@ -183,10 +192,10 @@ _main() {
     local args=()
     local do_x="0"
     local do_g="0"
-    while getopts "dcbsjqptxklgzfy" flag
+    while getopts "dcbsjqptxklgzfye" flag
     do
         case "$flag" in
-            d|c|b|s|j|q|p|t|x|k|l|g|z|f|y) args+=( "$flag" ) ;;
+            d|c|b|s|j|q|p|t|x|k|l|g|z|f|y|e) args+=( "$flag" ) ;;
             *) _usage; return 1 ;;
         esac
     done
@@ -216,6 +225,7 @@ _main() {
     [[ " ${args[*]} " == *"f"* ]] && ${go[@]} tool pprof bench.test ${1:-mem.out}
     [[ " ${args[*]} " == *"z"* ]] && _bench_dot_out_dot_txt
     [[ " ${args[*]} " == *"y"* ]] && _suite_debugging "$@" | _suite_trim_output
+    [[ " ${args[*]} " == *"e"* ]] && _check_shared_files "$@"
     
     true
     # shift $((OPTIND-1))
