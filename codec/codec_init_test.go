@@ -9,25 +9,6 @@ import (
 	. "github.com/ugorji/go/codec"
 )
 
-type testHED struct {
-	H Handle
-	E *Encoder
-	D *Decoder
-}
-
-var (
-	// testNoopH    = NoopHandle(8)
-	testMsgpackH = &MsgpackHandle{}
-	testBincH    = &BincHandle{}
-	testSimpleH  = &SimpleHandle{}
-	testCborH    = &CborHandle{}
-	testJsonH    = &JsonHandle{}
-
-	testHandles []Handle
-
-	testHEDs []testHED
-)
-
 // variables that are not flags, but which can configure the handles
 var (
 	testEncodeOptions EncodeOptions
@@ -35,26 +16,57 @@ var (
 	testRPCOptions    RPCOptions
 )
 
+type testHED struct {
+	H   Handle
+	Eb  *Encoder
+	Db  *Decoder
+	Eio *Encoder
+	Dio *Decoder
+}
+
+var (
+	// testNoopH    = NoopHandle(8)
+	testBincH    = &BincHandle{}
+	testMsgpackH = &MsgpackHandle{}
+	testJsonH    = &JsonHandle{}
+	testSimpleH  = &SimpleHandle{}
+	testCborH    = &CborHandle{}
+
+	testHandles []Handle
+
+	testHEDs []testHED
+)
+
 func init() {
-	testHEDs = make([]testHED, 0, 32)
-	testHandles = append(testHandles,
-		// testNoopH,
-		testMsgpackH, testBincH, testSimpleH, testCborH, testJsonH)
+	// testHEDs = make([]testHED, 0, 32)
+
 	// JSON should do HTMLCharsAsIs by default
 	testJsonH.HTMLCharsAsIs = true
 	// testJsonH.InternString = true
+
+	testHandles = append(testHandles, testSimpleH, testJsonH, testCborH, testMsgpackH, testBincH)
+
 	testReInitFns = append(testReInitFns, func() { testHEDs = nil })
 }
 
-func testHEDGet(h Handle) *testHED {
+func testHEDGet(h Handle) (d *testHED) {
 	for i := range testHEDs {
 		v := &testHEDs[i]
 		if v.H == h {
+			// fmt.Printf("testHEDGet: <cached> h: %v\n", h)
 			return v
 		}
 	}
-	testHEDs = append(testHEDs, testHED{h, NewEncoder(nil, h), NewDecoder(nil, h)})
-	return &testHEDs[len(testHEDs)-1]
+	testHEDs = append(testHEDs, testHED{
+		H:   h,
+		Eio: NewEncoder(nil, h),
+		Dio: NewDecoder(nil, h),
+		Eb:  NewEncoderBytes(nil, h),
+		Db:  NewDecoderBytes(nil, h),
+	})
+	d = &testHEDs[len(testHEDs)-1]
+	// fmt.Printf("testHEDGet: <new> h: %v\n", h)
+	return
 }
 
 func testSharedCodecEncode(ts interface{}, bsIn []byte, fn func([]byte) *bytes.Buffer,
@@ -62,13 +74,22 @@ func testSharedCodecEncode(ts interface{}, bsIn []byte, fn func([]byte) *bytes.B
 	// bs = make([]byte, 0, approxSize)
 	var e *Encoder
 	var buf *bytes.Buffer
+	useIO := testUseIoEncDec >= 0
 	if testUseReset && !testUseParallel {
-		e = testHEDGet(h).E
-	} else {
+		hed := testHEDGet(h)
+		if useIO {
+			e = hed.Eio
+		} else {
+			e = hed.Eb
+		}
+	} else if useIO {
 		e = NewEncoder(nil, h)
+	} else {
+		e = NewEncoderBytes(nil, h)
 	}
+
 	var oldWriteBufferSize int
-	if testUseIoEncDec >= 0 {
+	if useIO {
 		buf = fn(bsIn)
 		// set the encode options for using a buffer
 		oldWriteBufferSize = bh.WriterBufferSize
@@ -96,12 +117,23 @@ func testSharedCodecEncode(ts interface{}, bsIn []byte, fn func([]byte) *bytes.B
 
 func testSharedCodecDecoder(bs []byte, h Handle, bh *BasicHandle) (d *Decoder, oldReadBufferSize int) {
 	// var buf *bytes.Reader
+	useIO := testUseIoEncDec >= 0
 	if testUseReset && !testUseParallel {
-		d = testHEDGet(h).D
-	} else {
+		hed := testHEDGet(h)
+		// fmt.Printf("testSharedCodecDecoder: <hed>: %v\n", hed)
+		if useIO {
+			d = hed.Dio
+		} else {
+			d = hed.Db
+		}
+	} else if useIO {
 		d = NewDecoder(nil, h)
+	} else {
+		d = NewDecoderBytes(nil, h)
+		// fmt.Printf("testSharedCodecDecoder: not use IO: d: %v\n", d)
 	}
-	if testUseIoEncDec >= 0 {
+	// fmt.Printf("testSharedCodecDecoder: d: %v\n", d)
+	if useIO {
 		buf := bytes.NewReader(bs)
 		oldReadBufferSize = bh.ReaderBufferSize
 		bh.ReaderBufferSize = testUseIoEncDec
