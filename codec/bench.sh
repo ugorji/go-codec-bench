@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# download the code and all its dependencies 
+# download the code and all its dependencies
 _go_get() {
     # Note: keep "github.com/ugorji/go/codec" in quotes, as script pushing to github will replace it appropriately
     ${go[@]} get -u \
@@ -114,7 +114,7 @@ _suite_any() {
     for i in "${a[@]}"; do
         echo ">>>> bench TAGS: 'alltests $x $i' SUITE: $b"
         ${go[@]} test "${zargs[@]}" -tags "alltests $x $i" -bench "$b" -benchmem "$@"
-    done 
+    done
 }
 
 _suite_very_quick_json_non_suite() {

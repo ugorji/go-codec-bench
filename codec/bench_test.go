@@ -207,7 +207,6 @@ func doBenchCheck(t *testing.T, name string, encfn benchEncFn, decfn benchDecFn)
 	} else {
 		t.Logf("\t%10s: len: %d bytes,\t encode: %v,\t decode: %v", name, encLen, encDur, decDur)
 	}
-	return
 }
 
 func fnBenchmarkEncode(b *testing.B, encName string, ts interface{}, encfn benchEncFn) {
@@ -225,8 +224,9 @@ func fnBenchmarkEncode(b *testing.B, encName string, ts interface{}, encfn bench
 	}
 
 	runtime.GC()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	// b.ResetTimer()
+	// for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if _, err = encfn(ts, bs); err != nil {
 			b.Logf("Error encoding benchTs: %s: %v", encName, err)
 			b.FailNow()
@@ -249,11 +249,11 @@ func fnBenchmarkDecode(b *testing.B, encName string, ts interface{},
 
 	ts = benchTs
 
-	if strings.Index(encName, "json") != -1 {
+	if strings.Contains(encName, "json") {
 		encfn = fnJsonEncodeFn
-	} else if strings.Index(encName, "cbor") != -1 {
+	} else if strings.Contains(encName, "cbor") {
 		encfn = fnCborEncodeFn
-	} else if strings.Index(encName, "msgpack") != -1 {
+	} else if strings.Contains(encName, "msgpack") {
 		encfn = fnMsgpackEncodeFn
 	}
 
@@ -286,8 +286,9 @@ func fnBenchmarkDecode(b *testing.B, encName string, ts interface{},
 	// }
 
 	runtime.GC()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	// b.ResetTimer()
+	// for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		*locTs = TestStruc{}
 		// ts = newfn()
 		if err = decfn(buf, ts); err != nil {
