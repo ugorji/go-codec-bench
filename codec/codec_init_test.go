@@ -26,11 +26,11 @@ type testHED struct {
 
 var (
 	// testNoopH    = NoopHandle(8)
-	testBincH    = &BincHandle{}
-	testMsgpackH = &MsgpackHandle{}
-	testJsonH    = &JsonHandle{}
-	testSimpleH  = &SimpleHandle{}
-	testCborH    = &CborHandle{}
+	testBincH    *BincHandle
+	testMsgpackH *MsgpackHandle
+	testJsonH    *JsonHandle
+	testSimpleH  *SimpleHandle
+	testCborH    *CborHandle
 
 	testHandles []Handle
 
@@ -38,6 +38,17 @@ var (
 )
 
 func init() {
+	doTestInit()
+	testReInitFns = append(testReInitFns, doTestInit)
+}
+
+func doTestInit() {
+	testBincH = &BincHandle{}
+	testMsgpackH = &MsgpackHandle{}
+	testJsonH = &JsonHandle{}
+	testSimpleH = &SimpleHandle{}
+	testCborH = &CborHandle{}
+
 	// testHEDs = make([]testHED, 0, 32)
 
 	// JSON should do HTMLCharsAsIs by default
@@ -45,8 +56,7 @@ func init() {
 	// testJsonH.InternString = true
 
 	testHandles = append(testHandles, testSimpleH, testJsonH, testCborH, testMsgpackH, testBincH)
-
-	testReInitFns = append(testReInitFns, func() { testHEDs = nil })
+	testHEDs = nil
 }
 
 func testHEDGet(h Handle) (d *testHED) {
@@ -143,7 +153,7 @@ func testSharedCodecDecoder(bs []byte, h Handle, bh *BasicHandle) (d *Decoder, o
 	return
 }
 
-func testSharedCodecDecoderAfter(d *Decoder, oldReadBufferSize int, bh *BasicHandle) {
+func testSharedCodecDecoderAfter(_ *Decoder, oldReadBufferSize int, bh *BasicHandle) {
 	if testUseIoEncDec >= 0 {
 		bh.ReaderBufferSize = oldReadBufferSize
 	}
