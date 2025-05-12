@@ -15,6 +15,7 @@ import (
 	xdr "github.com/davecgh/go-xdr/xdr2"
 	fxcbor "github.com/fxamacker/cbor/v2"
 	mgobson "github.com/globalsign/mgo/bson"
+	jsonv2 "github.com/go-json-experiment/json"
 	goccyjson "github.com/goccy/go-json"
 	jsoniter "github.com/json-iterator/go"
 	vmsgpack "github.com/vmihailenco/msgpack/v4"
@@ -33,12 +34,18 @@ import (
            github.com/json-iterator/go \
            github.com/goccy/go-json \
            github.com/fxamacker/cbor/v2 \
+           github.com/go-json-experiment/json/... \
            github.com/mailru/easyjson/...
 
  Known Issues with external libraries:
  - msgp io.R/W support doesn't work. It throws error
 
 */
+
+var jsonv2Opts = jsonv2.JoinOptions(
+	jsonv2.FormatNilSliceAsNull(true),
+	jsonv2.FormatNilMapAsNull(true),
+)
 
 func init() {
 	testPreInitFns = append(testPreInitFns, benchXPreInit)
@@ -49,6 +56,7 @@ func benchXPreInit() {
 	benchCheckers = append(benchCheckers,
 		benchChecker{"json-iter", fnJsonIterEncodeFn, fnJsonIterDecodeFn},
 		benchChecker{"goccyjson", fnGoccyJsonEncodeFn, fnGoccyJsonDecodeFn},
+		benchChecker{"jsonv2", fnJsonv2EncodeFn, fnJsonv2DecodeFn},
 		benchChecker{"v-msgpack", fnVMsgpackEncodeFn, fnVMsgpackDecodeFn},
 		benchChecker{"bson", fnBsonEncodeFn, fnBsonDecodeFn},
 		benchChecker{"mgobson", fnMgobsonEncodeFn, fnMgobsonDecodeFn},
@@ -127,6 +135,22 @@ func fnGoccyJsonDecodeFn(buf []byte, ts interface{}) error {
 	return goccyjson.Unmarshal(buf, ts)
 }
 
+func fnJsonv2EncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
+	if testUseIoEncDec >= 0 {
+		buf := fnBenchmarkByteBuf(bsIn)
+		err := jsonv2.MarshalWrite(buf, ts, jsonv2Opts)
+		return buf.Bytes(), err
+	}
+	return jsonv2.Marshal(ts, jsonv2Opts)
+}
+
+func fnJsonv2DecodeFn(buf []byte, ts interface{}) error {
+	if testUseIoEncDec >= 0 {
+		return jsonv2.UnmarshalRead(bytes.NewReader(buf), ts, jsonv2Opts)
+	}
+	return jsonv2.Unmarshal(buf, ts, jsonv2Opts)
+}
+
 func fnFxcborEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
 	if testUseIoEncDec >= 0 {
 		buf := bytes.NewBuffer(bsIn[:0])
@@ -186,6 +210,14 @@ func Benchmark__GoccyJson__Encode(b *testing.B) {
 
 func Benchmark__GoccyJson__Decode(b *testing.B) {
 	fnBenchmarkDecode(b, "goccyjson", benchTs, fnGoccyJsonEncodeFn, fnGoccyJsonDecodeFn, fnBenchNewTs)
+}
+
+func Benchmark__Jsonv2__Encode(b *testing.B) {
+	fnBenchmarkEncode(b, "jsonv2", benchTs, fnJsonv2EncodeFn)
+}
+
+func Benchmark__Jsonv2__Decode(b *testing.B) {
+	fnBenchmarkDecode(b, "jsonv2", benchTs, fnJsonv2EncodeFn, fnJsonv2DecodeFn, fnBenchNewTs)
 }
 
 func Benchmark__Fxcbor_____Encode(b *testing.B) {
