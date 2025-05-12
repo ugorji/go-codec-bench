@@ -40,7 +40,7 @@ _sed_in_file() {
 }
 
 _shared_files() {
-    local f=(values_test.go 0_init_test.go 1_init_run_test.go 2_init_bench_test.go codec_bench_test.go)
+    local f=(values_test.go 0_init_test.go 1_init_run_test.go 2_init_bench_test.go codec_bench_test.go z_all_bench_test.go)
     local a=${1:-copy}
     local d=${2:-../../go/codec}
     echo "_shared_files: action: x${action}, d: ${d}"
@@ -49,7 +49,7 @@ _shared_files() {
             for i in ${f[@]}; do
                 cp $d/$i ./
             done
-            sed -i 's+// . "github.com/ugorji/go/codec"+. "github.com/ugorji/go/codec"+g' ./codec_init_test.go
+            sed -i 's+// . "github.com/ugorji/go/codec"+. "github.com/ugorji/go/codec"+g' ./1_init_run_test.go
             ;;
         xcheck)
             for i in ${f[@]}; do
@@ -192,6 +192,8 @@ _usage() {
     printf "\t-z run tests for bench.out.txt\n"
     printf "\t-f [pprof file] run pprof\n"
     printf "\t-y run debugging suite (during development only): [format/prefix] [suffix] [tags] [benchtime]\n"
+    printf "\t-e copy shared files from github.com/ugorji/go/codec package\n"
+    printf "\t-m compare/diff shared files vs github.com/ugorji/go/codec package\n"
 }
 
 _main() {
@@ -203,7 +205,7 @@ _main() {
     # export GODEBUG=asyncpreemptoff=1 # TODO remove
     
     local go=( "${MYGOCMD:-go}" )
-    local zargs=("-count" "1" "-tr")
+    local zargs=("-count" "1" "-tr" "-tzc")
     local args=()
     local do_x="0"
     local do_g="0"
