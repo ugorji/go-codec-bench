@@ -39,13 +39,27 @@ _sed_in_file() {
     esac
 }
 
-_check_shared_files() {
-    local d=${1:-../../go/codec}
-    for i in values_test.go init_test.go codec_init_test.go bench_test.go codec_bench_test.go; do
-        echo $i
-        diff -s $i $d/$i
-        echo '........................'
-    done
+_shared_files() {
+    local f=(values_test.go 0_init_test.go 1_init_run_test.go 2_init_bench_test.go codec_bench_test.go)
+    local a=${1:-copy}
+    local d=${2:-../../go/codec}
+    echo "_shared_files: action: x${action}, d: ${d}"
+    case "x${a}" in
+        xcopy)
+            for i in ${f[@]}; do
+                cp $d/$i ./
+            done
+            sed -i 's+// . "github.com/ugorji/go/codec"+. "github.com/ugorji/go/codec"+g' ./codec_init_test.go
+            ;;
+        xcheck)
+            for i in ${f[@]}; do
+                echo $i
+                diff -s $i $d/$i
+                echo '........................'
+            done
+            ;;
+        *) echo "WTF" ;;
+    esac
 }
 
 # To run the full suite of benchmarks, including executing against the external frameworks
@@ -193,10 +207,10 @@ _main() {
     local args=()
     local do_x="0"
     local do_g="0"
-    while getopts "dcbsjqptxklgzfye" flag
+    while getopts "dcbsjqptxklgzfyem" flag
     do
         case "$flag" in
-            d|c|b|s|j|q|p|t|x|k|l|g|z|f|y|e) args+=( "$flag" ) ;;
+            d|c|b|s|j|q|p|t|x|k|l|g|z|f|y|e|m) args+=( "$flag" ) ;;
             *) _usage; return 1 ;;
         esac
     done
@@ -226,8 +240,9 @@ _main() {
     [[ " ${args[*]} " == *"f"* ]] && ${go[@]} tool pprof bench.test ${1:-mem.out}
     [[ " ${args[*]} " == *"z"* ]] && _bench_dot_out_dot_txt
     [[ " ${args[*]} " == *"y"* ]] && _suite_debugging "$@" | _suite_trim_output
-    [[ " ${args[*]} " == *"e"* ]] && _check_shared_files "$@"
-    
+    [[ " ${args[*]} " == *"e"* ]] && _shared_files copy "$@"
+    [[ " ${args[*]} " == *"m"* ]] && _shared_files check "$@"
+
     true
     # shift $((OPTIND-1))
 }
