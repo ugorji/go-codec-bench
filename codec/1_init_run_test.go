@@ -5,6 +5,7 @@ package codec
 
 import (
 	"bytes"
+	"io"
 	// using codec.XXX directly
 	. "github.com/ugorji/go/codec"
 )
@@ -24,6 +25,27 @@ type testHED struct {
 	Dio *Decoder
 }
 
+type ioReaderWrapper struct {
+	r io.Reader
+}
+
+func (x ioReaderWrapper) Read(p []byte) (n int, err error) {
+	return x.r.Read(p)
+}
+
+type ioWriterWrapper struct {
+	w io.Writer
+}
+
+func (x ioWriterWrapper) Write(p []byte) (n int, err error) {
+	return x.w.Write(p)
+}
+
+// the handles are declared here, and initialized during the init function.
+//
+// Note the following:
+//   - if running parallel tests, then skip all tests which modify the Handle.
+//     This prevents data races during the test execution.
 var (
 	// testNoopH    = NoopHandle(8)
 	testBincH    *BincHandle
@@ -38,8 +60,13 @@ var (
 )
 
 func init() {
-	doTestInit()
-	testReInitFns = append(testReInitFns, doTestInit)
+	// doTestInit()
+	testPreInitFns = append(testPreInitFns, doTestInit)
+	testPostInitFns = append(testPostInitFns, doTestPostInit)
+	// doTestInit MUST be the first function executed during a reinit
+	// testReInitFns = slices.Insert(testReInitFns, 0, doTestInit)
+	// testReInitFns = slices.Insert(testReInitFns, 0, doTestReinit)
+	testReInitFns = append(testReInitFns, doTestInit, doTestPostInit)
 }
 
 func doTestInit() {
@@ -55,9 +82,32 @@ func doTestInit() {
 	testJsonH.HTMLCharsAsIs = true
 	// testJsonH.InternString = true
 
-	testHandles = append(testHandles, testSimpleH, testJsonH, testCborH, testMsgpackH, testBincH)
+	testHandles = nil
+	testHandles = append(testHandles, testSimpleH, testJsonH,
+		testCborH, testMsgpackH, testBincH)
+
 	testHEDs = nil
 }
+
+func doTestPostInit() {
+	testUpdateBasicHandleOptions(&testBincH.BasicHandle)
+	testUpdateBasicHandleOptions(&testMsgpackH.BasicHandle)
+	testUpdateBasicHandleOptions(&testJsonH.BasicHandle)
+	testUpdateBasicHandleOptions(&testSimpleH.BasicHandle)
+	testUpdateBasicHandleOptions(&testCborH.BasicHandle)
+}
+
+// func doTestReinit() {
+// 	// doTestInit()
+// 	// MARKER 2025 - instead, just reset them all
+// 	for _, h := range testHandles {
+// 		bh := testBasicHandle(h)
+// 		bh.basicHandleRuntimeState = basicHandleRuntimeState{}
+// 		atomic.StoreUint32(&bh.inited, 0)
+// 		initHandle(h)
+// 	}
+// 	testHEDs = nil
+// }
 
 func testHEDGet(h Handle) (d *testHED) {
 	for i := range testHEDs {
@@ -77,8 +127,9 @@ func testHEDGet(h Handle) (d *testHED) {
 	return
 }
 
-func testSharedCodecEncode(ts interface{}, bsIn []byte, fn func([]byte) *bytes.Buffer,
-	h Handle, bh *BasicHandle, useMust bool) (bs []byte, err error) {
+func testSharedCodecEncode(ts interface{}, bsIn []byte,
+	fn func([]byte) *bytes.Buffer,
+	h Handle, useMust bool) (bs []byte, err error) {
 	// bs = make([]byte, 0, approxSize)
 	var e *Encoder
 	var buf *bytes.Buffer
@@ -96,12 +147,9 @@ func testSharedCodecEncode(ts interface{}, bsIn []byte, fn func([]byte) *bytes.B
 		e = NewEncoderBytes(nil, h)
 	}
 
-	var oldWriteBufferSize int
+	// var oldWriteBufferSize int
 	if useIO {
 		buf = fn(bsIn)
-		// set the encode options for using a buffer
-		oldWriteBufferSize = bh.WriterBufferSize
-		bh.WriterBufferSize = testUseIoEncDec
 		if testUseIoWrapper {
 			e.Reset(ioWriterWrapper{buf})
 		} else {
@@ -118,12 +166,11 @@ func testSharedCodecEncode(ts interface{}, bsIn []byte, fn func([]byte) *bytes.B
 	}
 	if testUseIoEncDec >= 0 {
 		bs = buf.Bytes()
-		bh.WriterBufferSize = oldWriteBufferSize
 	}
 	return
 }
 
-func testSharedCodecDecoder(bs []byte, h Handle, bh *BasicHandle) (d *Decoder, oldReadBufferSize int) {
+func testSharedCodecDecoder(bs []byte, h Handle) (d *Decoder) {
 	// var buf *bytes.Reader
 	useIO := testUseIoEncDec >= 0
 	if testUseReset && !testUseParallel {
@@ -140,8 +187,6 @@ func testSharedCodecDecoder(bs []byte, h Handle, bh *BasicHandle) (d *Decoder, o
 	}
 	if useIO {
 		buf := bytes.NewReader(bs)
-		oldReadBufferSize = bh.ReaderBufferSize
-		bh.ReaderBufferSize = testUseIoEncDec
 		if testUseIoWrapper {
 			d.Reset(ioReaderWrapper{buf})
 		} else {
@@ -153,19 +198,24 @@ func testSharedCodecDecoder(bs []byte, h Handle, bh *BasicHandle) (d *Decoder, o
 	return
 }
 
-func testSharedCodecDecoderAfter(_ *Decoder, oldReadBufferSize int, bh *BasicHandle) {
-	if testUseIoEncDec >= 0 {
-		bh.ReaderBufferSize = oldReadBufferSize
-	}
-}
-
-func testSharedCodecDecode(bs []byte, ts interface{}, h Handle, bh *BasicHandle, useMust bool) (err error) {
-	d, oldReadBufferSize := testSharedCodecDecoder(bs, h, bh)
+func testSharedCodecDecode(bs []byte, ts interface{}, h Handle, useMust bool) (err error) {
+	d := testSharedCodecDecoder(bs, h)
 	if useMust {
 		d.MustDecode(ts)
 	} else {
 		err = d.Decode(ts)
 	}
-	testSharedCodecDecoderAfter(d, oldReadBufferSize, bh)
 	return
+}
+
+func testUpdateBasicHandleOptions(bh *BasicHandle) {
+	// bh.clearInited() // so it is reinitialized next time around // MARKER 2025 (may have to put it back)
+	// pre-fill them first
+	bh.EncodeOptions = testEncodeOptions
+	bh.DecodeOptions = testDecodeOptions
+	bh.RPCOptions = testRPCOptions
+	// bh.InterfaceReset = true
+	// bh.PreferArrayOverSlice = true
+	// modify from flag'ish things
+	// bh.MaxInitLen = testMaxInitLen
 }

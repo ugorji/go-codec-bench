@@ -1,3 +1,5 @@
+//go:build !codec.nobench && go1.24
+
 // Copyright (c) 2012-2020 Ugorji Nwoke. All rights reserved.
 // Use of this source code is governed by a MIT license found in the LICENSE file.
 
@@ -69,18 +71,19 @@ type benchChecker struct {
 }
 
 func init() {
-	testPreInitFns = append(testPreInitFns, benchPreInit)
+	// testPreInitFns = append(testPreInitFns, benchPreInit)
 	// testPostInitFns = append(testPostInitFns, codecbenchPostInit)
+	testPostInitFns = append(testPostInitFns, benchInit)
+	testReInitFns = append(testReInitFns, benchReinit)
 }
 
-func benchPreInit() {
+func benchInit() {
 	benchTs = newTestStruc(testDepth, testNumRepeatString, true, !testSkipIntf, testMapStringKeyOnly)
 	approxSize = approxDataSize(reflect.ValueOf(benchTs)) * 2 // multiply by 1.5 or 2 to appease msgp, and prevent alloc
 	// bytesLen := 1024 * 4 * (testDepth + 1) * (testDepth + 1)
 	// if bytesLen < approxSize {
 	// 	bytesLen = approxSize
 	// }
-
 	if !testBenchmarkNoConfig {
 		// benchmark comparisons use zerocopy (easyjson, json-iterator, etc).
 		// use zerocopy for the benchmarks, for best performance, and better comparison to others.
@@ -115,7 +118,7 @@ func benchmarkDivider() {
 // }
 
 func TestBenchInit(t *testing.T) {
-	testOnce.Do(testInitAll)
+	// testOnce.Do(testInitAll)
 	if !testing.Verbose() {
 		return
 	}
@@ -212,7 +215,7 @@ func doBenchCheck(t *testing.T, name string, encfn benchEncFn, decfn benchDecFn)
 
 func fnBenchmarkEncode(b *testing.B, encName string, ts interface{}, encfn benchEncFn) {
 	defer benchRecoverPanic(b)
-	testOnce.Do(testInitAll)
+	// testOnce.Do(testInitAll)
 	// ignore method params: ts, and work on benchTs directly
 	ts = benchTs
 	// do initial warm up by running encode one time
@@ -233,7 +236,7 @@ func fnBenchmarkDecode(b *testing.B, encName string, ts interface{},
 	encfn benchEncFn, decfn benchDecFn, newfn benchIntfFn,
 ) {
 	defer benchRecoverPanic(b)
-	testOnce.Do(testInitAll)
+	// testOnce.Do(testInitAll)
 
 	// MARKER: to ensure same sequence of bytes to be decoded, always encode using codec encoder.
 	//

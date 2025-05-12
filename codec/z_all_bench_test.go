@@ -1,4 +1,4 @@
-//go:build alltests
+//go:build alltests && !codec.nobench && go1.24
 
 // Copyright (c) 2012-2020 Ugorji Nwoke. All rights reserved.
 // Use of this source code is governed by a MIT license found in the LICENSE file.
@@ -9,12 +9,15 @@ package codec
 
 import (
 	"strconv"
-	"sync"
 	"testing"
 	"time"
 )
 
-var benchmarkGroupOnce sync.Once
+func init() {
+	testPostInitFns = append(testPostInitFns, benchmarkGroupInitAll)
+}
+
+// var benchmarkGroupOnce sync.Once
 
 var benchmarkGroupSave struct {
 	testUseIoEncDec int
@@ -22,15 +25,17 @@ var benchmarkGroupSave struct {
 
 	testDepth            int
 	testMapStringKeyOnly bool
+	testZeroCopy         bool
 }
 
 func benchmarkGroupInitAll() {
-	testInitAll() // calls flag.Parse
+	// testInitAll() // calls flag.Parse
 	benchmarkGroupSave.testUseIoEncDec = testUseIoEncDec
 	benchmarkGroupSave.testUseReset = testUseReset
 
 	benchmarkGroupSave.testDepth = testDepth
 	benchmarkGroupSave.testMapStringKeyOnly = testMapStringKeyOnly
+	benchmarkGroupSave.testZeroCopy = testZeroCopy
 }
 
 func benchmarkGroupReset() {
@@ -39,6 +44,7 @@ func benchmarkGroupReset() {
 
 	testDepth = benchmarkGroupSave.testDepth
 	testMapStringKeyOnly = benchmarkGroupSave.testMapStringKeyOnly
+	testZeroCopy = benchmarkGroupSave.testZeroCopy
 }
 
 func benchmarkOneFn(fns []func(*testing.B)) func(*testing.B) {
@@ -57,7 +63,7 @@ func benchmarkOneFn(fns []func(*testing.B)) func(*testing.B) {
 }
 
 func benchmarkSuiteNoop(b *testing.B) {
-	testOnce.Do(testInitAll)
+	// testOnce.Do(testInitAll)
 	// b.ResetTimer()
 	// for i := 0; i < b.N; i++ {
 	for b.Loop() {
@@ -66,32 +72,28 @@ func benchmarkSuiteNoop(b *testing.B) {
 }
 
 func benchmarkSuite(t *testing.B, fns ...func(t *testing.B)) {
-	benchmarkGroupOnce.Do(benchmarkGroupInitAll)
+	// benchmarkGroupOnce.Do(benchmarkGroupInitAll)
 
 	f := benchmarkOneFn(fns)
 	// find . -name "*_test.go" | xargs grep -e 'flag.' | cut -d '&' -f 2 | cut -d ',' -f 1 | grep -e '^bench'
 
-	testReinit() // so flag.Parse() is called first, and never called again
-	benchReinit()
+	testReinit()
 
 	benchmarkGroupReset()
 
 	testReinit()
-	benchReinit()
 	t.Run("options-false...", f)
 
 	benchmarkGroupReset()
 
 	testUseIoEncDec = 1024
 	testReinit()
-	benchReinit()
 	t.Run("use-bufio-!bytes", f)
 
 	benchmarkGroupReset()
 
 	testUseReset = true
 	testReinit()
-	benchReinit()
 	t.Run("reset-enc-dec...", f)
 
 	benchmarkGroupReset()
@@ -99,7 +101,7 @@ func benchmarkSuite(t *testing.B, fns ...func(t *testing.B)) {
 
 func benchmarkVeryQuickSuite(t *testing.B, name string, fns ...func(t *testing.B)) {
 	benchmarkDivider()
-	benchmarkGroupOnce.Do(benchmarkGroupInitAll)
+	// benchmarkGroupOnce.Do(benchmarkGroupInitAll)
 	benchmarkGroupReset()
 
 	// bd=1 2 | ti=-1, 1024 |
@@ -107,7 +109,6 @@ func benchmarkVeryQuickSuite(t *testing.B, name string, fns ...func(t *testing.B
 	testUseIoEncDec = -1
 	// testDepth = depth
 	testReinit()
-	benchReinit()
 
 	t.Run(name+"-bd"+strconv.Itoa(testDepth)+"........", benchmarkOneFn(fns))
 	benchmarkGroupReset()
@@ -120,13 +121,11 @@ func benchmarkQuickSuite(t *testing.B, name string, fns ...func(t *testing.B)) {
 	testUseIoEncDec = 1024 // (value of defEncByteBufSize): use smaller buffer, and more flushes - it's ok.
 	// testDepth = depth
 	testReinit()
-	benchReinit()
 	t.Run(name+"-bd"+strconv.Itoa(testDepth)+"-buf"+strconv.Itoa(testUseIoEncDec), benchmarkOneFn(fns))
 
 	testUseIoEncDec = 0
 	// testDepth = depth
 	testReinit()
-	benchReinit()
 	t.Run(name+"-bd"+strconv.Itoa(testDepth)+"-io.....", benchmarkOneFn(fns))
 
 	benchmarkGroupReset()
