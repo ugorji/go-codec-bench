@@ -19,6 +19,7 @@ import "testing"
 
 func benchmarkXGroup(t *testing.B) {
 	benchmarkDivider()
+	t.Run("Benchmark__JsonV2_____Encode", Benchmark__JsonV2_____Encode)
 	t.Run("Benchmark__JsonIter___Encode", Benchmark__JsonIter___Encode)
 	t.Run("Benchmark__GoccyJson__Encode", Benchmark__GoccyJson__Encode)
 	t.Run("Benchmark__Fxcbor_____Encode", Benchmark__Fxcbor_____Encode)
@@ -30,6 +31,7 @@ func benchmarkXGroup(t *testing.B) {
 	t.Run("Benchmark__Sereal_____Encode", Benchmark__Sereal_____Encode)
 
 	benchmarkDivider()
+	t.Run("Benchmark__JsonV2_____Decode", Benchmark__JsonV2_____Decode)
 	t.Run("Benchmark__JsonIter___Decode", Benchmark__JsonIter___Decode)
 	t.Run("Benchmark__GoccyJson__Decode", Benchmark__GoccyJson__Decode)
 	t.Run("Benchmark__Fxcbor_____Decode", Benchmark__Fxcbor_____Decode)
@@ -51,6 +53,7 @@ func benchmarkCodecXGroup(t *testing.B) {
 	t.Run("Benchmark__Std_Json___Encode", Benchmark__Std_Json___Encode)
 	t.Run("Benchmark__Gob________Encode", Benchmark__Gob________Encode)
 	// t.Run("Benchmark__Std_Xml____Encode", Benchmark__Std_Xml____Encode)
+	t.Run("Benchmark__JsonV2_____Encode", Benchmark__JsonV2_____Encode)
 	t.Run("Benchmark__JsonIter___Encode", Benchmark__JsonIter___Encode)
 	t.Run("Benchmark__GoccyJson__Encode", Benchmark__GoccyJson__Encode)
 	t.Run("Benchmark__Bson_______Encode", Benchmark__Bson_______Encode)
@@ -70,6 +73,7 @@ func benchmarkCodecXGroup(t *testing.B) {
 	t.Run("Benchmark__Std_Json___Decode", Benchmark__Std_Json___Decode)
 	t.Run("Benchmark__Gob________Decode", Benchmark__Gob________Decode)
 	// t.Run("Benchmark__Std_Xml____Decode", Benchmark__Std_Xml____Decode)
+	t.Run("Benchmark__JsonV2_____Decode", Benchmark__JsonV2_____Decode)
 	t.Run("Benchmark__JsonIter___Decode", Benchmark__JsonIter___Decode)
 	t.Run("Benchmark__GoccyJson__Decode", Benchmark__GoccyJson__Decode)
 	t.Run("Benchmark__Bson_______Decode", Benchmark__Bson_______Decode)
@@ -97,6 +101,7 @@ func benchmarkAllJsonEncodeGroup(t *testing.B) {
 	benchmarkDivider()
 	t.Run("Benchmark__Json_______Encode", Benchmark__Json_______Encode)
 	t.Run("Benchmark__Std_Json___Encode", Benchmark__Std_Json___Encode)
+	t.Run("Benchmark__JsonV2_____Encode", Benchmark__JsonV2_____Encode)
 	t.Run("Benchmark__JsonIter___Encode", Benchmark__JsonIter___Encode)
 	t.Run("Benchmark__GoccyJson__Encode", Benchmark__GoccyJson__Encode)
 }
@@ -105,6 +110,7 @@ func benchmarkAllJsonDecodeGroup(t *testing.B) {
 	benchmarkDivider()
 	t.Run("Benchmark__Json_______Decode", Benchmark__Json_______Decode)
 	t.Run("Benchmark__Std_Json___Decode", Benchmark__Std_Json___Decode)
+	t.Run("Benchmark__JsonV2_____Decode", Benchmark__JsonV2_____Decode)
 	t.Run("Benchmark__JsonIter___Decode", Benchmark__JsonIter___Decode)
 	t.Run("Benchmark__GoccyJson__Decode", Benchmark__GoccyJson__Decode)
 }

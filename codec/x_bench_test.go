@@ -212,11 +212,11 @@ func Benchmark__GoccyJson__Decode(b *testing.B) {
 	fnBenchmarkDecode(b, "goccyjson", benchTs, fnGoccyJsonEncodeFn, fnGoccyJsonDecodeFn, fnBenchNewTs)
 }
 
-func Benchmark__Jsonv2__Encode(b *testing.B) {
+func Benchmark__JsonV2_____Encode(b *testing.B) {
 	fnBenchmarkEncode(b, "jsonv2", benchTs, fnJsonv2EncodeFn)
 }
 
-func Benchmark__Jsonv2__Decode(b *testing.B) {
+func Benchmark__JsonV2_____Decode(b *testing.B) {
 	fnBenchmarkDecode(b, "jsonv2", benchTs, fnJsonv2EncodeFn, fnJsonv2DecodeFn, fnBenchNewTs)
 }
 
