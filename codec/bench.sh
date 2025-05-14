@@ -205,7 +205,7 @@ _main() {
     # export GODEBUG=asyncpreemptoff=1 # TODO remove
     
     local go=( "${MYGOCMD:-go}" )
-    local zargs=("-count" "1" "-tr" "-tzc")
+    local zargs=("-count" "1" "-tr" "-tzc") # "-brm")
     local args=()
     local do_x="0"
     local do_g="0"
