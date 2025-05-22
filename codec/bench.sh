@@ -119,6 +119,7 @@ _suite_tests_strip_file_line() {
 }
 
 _suite_any() {
+    local t="1s"
     local x="$1"
     local g="$2"
     local b="$3"
@@ -127,7 +128,7 @@ _suite_any() {
     if [[ "$g" = "g" ]]; then a=( "generated" "generated codec.safe"); fi
     for i in "${a[@]}"; do
         echo ">>>> bench TAGS: 'alltests $x $i' SUITE: $b"
-        ${go[@]} test "${zargs[@]}" -tags "alltests $x $i" -bench "$b" -benchmem "$@"
+        ${go[@]} test "${zargs[@]}" -tags "alltests $x $i" -bench "$b" -benchtime "$t" -benchmem "$@"
     done
 }
 
@@ -158,7 +159,7 @@ _suite_very_quick_benchmark() {
     # esac
     local b="${2}"
     local c="${3}"
-    local t="${4:-4s}" # 4s 1x
+    local t="${4:-1s}" # 4s 1x
     shift 4
     ${go[@]} test "${zargs[@]}" -tags "alltests ${c}" -bench "__${a}__.*${b}" -benchmem -benchtime "${t}" "$@"
 }
