@@ -97,15 +97,10 @@ func benchUpdateHandles() {
 		return
 	}
 
-	// benchmark comparisons use zerocopy (easyjson, json-iterator, etc).
-	// use zerocopy for the benchmarks, for best performance, and better comparison to others.
-	testJsonH.ZeroCopy = true
-	testCborH.ZeroCopy = true
-	testMsgpackH.ZeroCopy = true
-	testSimpleH.ZeroCopy = true
-	testBincH.ZeroCopy = true
+	// some external benchmarks use zerocopy by default e.g. easyjson, json-iterator.
+	// for same comparison, set testZeroCopy = true so it is inherited
 
-	// std-lib encoging/json does the following, which we will do for codec in these benchmarks.
+	// match default behavior of std-lib encoging/json:
 	// - sets into a map without getting what's there first.
 	// - sets into an interface value regardless of what was in there
 	// - sets slice to zero len first, then appends (equivalent to ignoring slice contents)
@@ -114,6 +109,7 @@ func benchUpdateHandles() {
 	testJsonH.InterfaceReset = true
 	testJsonH.SliceElementReset = true
 
+	// msgpack defaults to less rich v1.0. Instead, use v2.0 (final in 2014)
 	testMsgpackH.WriteExt = true
 }
 
@@ -126,11 +122,8 @@ func benchmarkDivider() {
 // 	testOnce.Do(testInitAll)
 // }
 
-func TestBenchInit(t *testing.T) {
+func TestBenchOnePass(t *testing.T) {
 	// testOnce.Do(testInitAll)
-	if !testing.Verbose() {
-		return
-	}
 	// t.Logf("..............................................")
 	t.Logf("BENCHMARK INIT: %v", time.Now())
 	// t.Logf("To run full benchmark comparing encodings, use: \"go test -bench=.\"")
