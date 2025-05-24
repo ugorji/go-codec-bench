@@ -18,7 +18,7 @@ import (
 	jsonv2 "github.com/go-json-experiment/json"
 	goccyjson "github.com/goccy/go-json"
 	jsoniter "github.com/json-iterator/go"
-	vmsgpack "github.com/vmihailenco/msgpack/v4"
+	vmsgpack "github.com/vmihailenco/msgpack/v5"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -30,7 +30,7 @@ import (
            bitbucket.org/bodhisnarkva/cbor/go \
            github.com/davecgh/go-xdr/xdr2 \
            github.com/globalsign/mgo/bson \
-           github.com/vmihailenco/msgpack/v4 /
+           github.com/vmihailenco/msgpack/v5 /
            github.com/json-iterator/go \
            github.com/goccy/go-json \
            github.com/fxamacker/cbor/v2 \
