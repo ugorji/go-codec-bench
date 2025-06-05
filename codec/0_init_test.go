@@ -58,16 +58,17 @@ package codec
 // and will not redefine these "global" flags.
 
 import (
-	"bytes"
 	"flag"
+	"reflect"
+	"strconv"
 	"testing"
 )
 
 func init() {
 	// log.SetOutput(io.Discard) // don't allow things log to standard out/err
 	testPreInitFns = append(testPreInitFns, testInitFlags, benchInitFlags, testParseFlags)
-	testPostInitFns = append(testPostInitFns, testUpdateOptionsFromFlags)
-	testReInitFns = append(testReInitFns, testUpdateOptionsFromFlags)
+	// testPostInitFns = append(testPostInitFns, testUpdateOptionsFromFlags)
+	// testReInitFns = append(testReInitFns, testUpdateOptionsFromFlags)
 }
 
 func TestMain(m *testing.M) {
@@ -83,64 +84,88 @@ var (
 )
 
 // flag variables used by tests (and bench)
-var (
-	testVerbose bool
-
+type testVars struct {
+	Verbose bool
 	//depth of 0 maps to ~400bytes json-encoded string, 1 maps to ~1400 bytes, etc
 	//For depth>1, we likely trigger stack growth for encoders, making benchmarking unreliable.
-	testDepth int
+	Depth int
 
-	testMaxInitLen int
+	UseDiff bool
 
-	testUseDiff bool
+	UseReset    bool
+	UseParallel bool
 
-	testUseReset    bool
-	testUseParallel bool
+	SkipIntf     bool
+	SkipRPCTests bool
 
-	testSkipIntf bool
+	UseIoWrapper bool
 
-	testUseIoEncDec  int
-	testUseIoWrapper bool
+	NumRepeatString int
 
-	testNumRepeatString int
+	RpcBufsize       int
+	MapStringKeyOnly bool
 
-	testRpcBufsize       int // Deprecated: no-op
-	testMapStringKeyOnly bool
-	testZeroCopy         bool
+	BenchmarkNoConfig bool
 
-	testBenchmarkNoConfig bool
+	BenchmarkWithRuntimeMetrics bool
 
-	testBenchmarkWithRuntimeMetrics bool
-)
+	bufsize    testBufioSizeFlag
+	maxInitLen int
+	zeroCopy   bool
+
+	// MaxInitLen int
+	// ZeroCopy         bool
+	// UseIoEncDec  int
+}
+
+var testv = testVars{
+	bufsize:         -1,
+	maxInitLen:      1024,
+	zeroCopy:        true,
+	NumRepeatString: 8,
+}
+
+type testBufioSizeFlag int
+
+func (x *testBufioSizeFlag) String() string { return strconv.Itoa(int(*x)) }
+func (x *testBufioSizeFlag) Set(s string) (err error) {
+	v, err := strconv.ParseInt(s, 0, strconv.IntSize)
+	if err != nil {
+		v = -1
+	}
+	*x = testBufioSizeFlag(v)
+	return
+}
+func (x *testBufioSizeFlag) Get() interface{} { return int(*x) }
 
 func testInitFlags() {
 	var bIgnore bool
 	// delete(testDecOpts.ExtFuncs, timeTyp)
-	flag.BoolVar(&testVerbose, "tv", false, "Text Extra Verbose Logging if -v if set")
-	flag.IntVar(&testUseIoEncDec, "ti", -1, "Use IO Reader/Writer for Marshal/Unmarshal ie >= 0")
-	flag.BoolVar(&testUseIoWrapper, "tiw", false, "Wrap the IO Reader/Writer with a base pass-through reader/writer")
+	flag.Var(&testv.bufsize, "ti", "Use IO Reader/Writer for Marshal/Unmarshal ie >= 0")
+	flag.BoolVar(&testv.Verbose, "tv", false, "Text Extra Verbose Logging if -v if set")
+	flag.BoolVar(&testv.UseIoWrapper, "tiw", false, "Wrap the IO Reader/Writer with a base pass-through reader/writer")
 
-	flag.BoolVar(&testSkipIntf, "tf", false, "Skip Interfaces")
-	flag.BoolVar(&testUseReset, "tr", false, "Use Reset")
-	flag.BoolVar(&testUseParallel, "tp", false, "Run tests in parallel")
-	flag.IntVar(&testNumRepeatString, "trs", 8, "Create string variables by repeating a string N times")
-	flag.BoolVar(&testUseDiff, "tdiff", false, "Use Diff")
-	flag.BoolVar(&testZeroCopy, "tzc", false, "Use Zero copy mode")
+	flag.BoolVar(&testv.SkipIntf, "tf", false, "Skip Interfaces")
+	flag.BoolVar(&testv.UseReset, "tr", false, "Use Reset")
+	flag.BoolVar(&testv.UseParallel, "tp", false, "Run tests in parallel")
+	flag.IntVar(&testv.NumRepeatString, "trs", 8, "Create string variables by repeating a string N times")
+	flag.BoolVar(&testv.UseDiff, "tdiff", false, "Use Diff")
+	flag.BoolVar(&testv.zeroCopy, "tzc", false, "Use Zero copy mode")
 
-	flag.BoolVar(&bIgnore, "tm", true, "(Deprecated) Use Must(En|De)code")
+	flag.IntVar(&testv.maxInitLen, "tx", 0, "Max Init Len")
 
-	flag.IntVar(&testMaxInitLen, "tx", 0, "Max Init Len")
+	flag.IntVar(&testv.Depth, "tsd", 0, "Test Struc Depth")
+	flag.BoolVar(&testv.MapStringKeyOnly, "tsk", false, "use maps with string keys only")
 
-	flag.IntVar(&testDepth, "tsd", 0, "Test Struc Depth")
-	flag.BoolVar(&testMapStringKeyOnly, "tsk", false, "use maps with string keys only")
+	flag.BoolVar(&bIgnore, "tm", false, "(Deprecated) Use Must(En|De)code")
 }
 
 func benchInitFlags() {
-	flag.BoolVar(&testBenchmarkNoConfig, "bnc", false, "benchmarks: do not make configuration changes for fair benchmarking")
-	flag.BoolVar(&testBenchmarkWithRuntimeMetrics, "brm", false, "benchmarks: include runtime metrics")
+	flag.BoolVar(&testv.BenchmarkNoConfig, "bnc", false, "benchmarks: do not make configuration changes for fair benchmarking")
+	flag.BoolVar(&testv.BenchmarkWithRuntimeMetrics, "brm", false, "benchmarks: include runtime metrics")
 	// flags reproduced here for compatibility (duplicate some in testInitFlags)
-	flag.BoolVar(&testMapStringKeyOnly, "bs", false, "benchmarks: use maps with string keys only")
-	flag.IntVar(&testDepth, "bd", 1, "Benchmarks: Test Struc Depth")
+	flag.BoolVar(&testv.MapStringKeyOnly, "bs", false, "benchmarks: use maps with string keys only")
+	flag.IntVar(&testv.Depth, "bd", 1, "Benchmarks: Test Struc Depth")
 }
 
 func testParseFlags() {
@@ -148,13 +173,6 @@ func testParseFlags() {
 	if !flag.Parsed() {
 		flag.Parse()
 	}
-}
-
-func testUpdateOptionsFromFlags() {
-	testEncodeOptions.WriterBufferSize = testUseIoEncDec
-	testDecodeOptions.ReaderBufferSize = testUseIoEncDec
-	testDecodeOptions.MaxInitLen = testMaxInitLen
-	testDecodeOptions.ZeroCopy = testZeroCopy
 }
 
 func testReinit() {
@@ -173,13 +191,36 @@ func testInitAll() {
 	}
 }
 
-// --- functions below are used only by benchmarks alone
-
-func fnBenchmarkByteBuf(bsIn []byte) (buf *bytes.Buffer) {
-	// var buf bytes.Buffer
-	// buf.Grow(approxSize)
-	buf = bytes.NewBuffer(bsIn)
-	buf.Truncate(0)
+func approxDataSize(rv reflect.Value) (sum int) {
+	switch rk := rv.Kind(); rk {
+	case reflect.Invalid:
+	case reflect.Ptr, reflect.Interface:
+		sum += int(rv.Type().Size())
+		sum += approxDataSize(rv.Elem())
+	case reflect.Slice:
+		sum += int(rv.Type().Size())
+		for j := 0; j < rv.Len(); j++ {
+			sum += approxDataSize(rv.Index(j))
+		}
+	case reflect.String:
+		sum += int(rv.Type().Size())
+		sum += rv.Len()
+	case reflect.Map:
+		sum += int(rv.Type().Size())
+		for _, mk := range rv.MapKeys() {
+			sum += approxDataSize(mk)
+			sum += approxDataSize(rv.MapIndex(mk))
+		}
+	case reflect.Struct:
+		//struct size already includes the full data size.
+		//sum += int(rv.Type().Size())
+		for j := 0; j < rv.NumField(); j++ {
+			sum += approxDataSize(rv.Field(j))
+		}
+	default:
+		//pure value types
+		sum += int(rv.Type().Size())
+	}
 	return
 }
 

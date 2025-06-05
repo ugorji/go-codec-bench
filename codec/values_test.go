@@ -1,5 +1,3 @@
-// comment this out // + build testing
-
 // Copyright (c) 2012-2020 Ugorji Nwoke. All rights reserved.
 // Use of this source code is governed by a MIT license found in the LICENSE file.
 
@@ -20,6 +18,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // func init() {
@@ -35,6 +34,8 @@ type wrapUint64 uint64
 type wrapString string
 type wrapUint64Slice []wrapUint64
 type wrapStringSlice []wrapString
+
+type wrapMapStringUint64 map[string]uint64
 
 // some other types
 
@@ -100,6 +101,8 @@ type testSimpleFields struct {
 	WrapSliceInt64  wrapSliceUint64
 	WrapSliceString wrapSliceString
 
+	WrapMapStringUint64 wrapMapStringUint64
+
 	Msint map[string]int
 }
 
@@ -141,6 +144,8 @@ type TestStrucCommon struct {
 
 	WrapSliceInt64  wrapSliceUint64
 	WrapSliceString wrapSliceString
+
+	WrapMapStringUint64 wrapMapStringUint64
 
 	Msint map[string]int
 
@@ -327,6 +332,8 @@ func populateTestStrucCommon(ts *TestStrucCommon, n int, bench, useInterface, us
 		WrapSliceInt64:  []uint64{4, 16, 64, 256},
 		WrapSliceString: []string{strRpt(n, "4"), strRpt(n, "16"), strRpt(n, "64"), strRpt(n, "256")},
 
+		WrapMapStringUint64: map[string]uint64{"4": 4, "16": 16},
+
 		// R: Raw([]byte("goodbye")),
 		// Rext: RawExt{ 120, []byte("hello"), }, // MARKER: don't set this - it's hard to test
 
@@ -361,6 +368,8 @@ func populateTestStrucCommon(ts *TestStrucCommon, n int, bench, useInterface, us
 
 			WrapSliceInt64:  []uint64{4, 16, 64, 256},
 			WrapSliceString: []string{strRpt(n, "4"), strRpt(n, "16"), strRpt(n, "64"), strRpt(n, "256")},
+
+			WrapMapStringUint64: map[string]uint64{"4": 4, "16": 16},
 		},
 
 		SstrUi64T:       make([]stringUint64T, numStrUi64T), // {{"1", 1}, {"2", 2}, {"3", 3}, {"4", 4}},
@@ -416,8 +425,10 @@ func newTestStruc(depth, n int, bench, useInterface, useStringKeyOnly bool) (ts 
 }
 
 var testStrRptMap = make(map[int]map[string]string)
+var testStrRptMapMu sync.Mutex
 
 func strRpt(n int, s string) string {
+	testStrRptMapMu.Lock()
 	// if false {
 	// 	return strings.Repeat(s, n)
 	// }
@@ -431,6 +442,7 @@ func strRpt(n int, s string) string {
 		v1 = strings.Repeat(s, n)
 		m1[s] = v1
 	}
+	testStrRptMapMu.Unlock()
 	return v1
 }
 

@@ -185,7 +185,6 @@ _usage() {
     printf "usage: bench.sh -[dcbsgjqpz] for \n"
     printf "\t-d download\n"
     printf "\t-c code-generate\n"
-    printf "\t-e compare files shared with go/codec\n"
     printf "\t-tx tests (show stats for each format and whether encoded == decoded); if x, do external also\n"
     printf "\t-sgx run test suite for codec; if g, use generated files; if x, do external also\n"
     printf "\t-jq run test suite for [json, json-quick]\n"

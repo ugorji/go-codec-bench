@@ -5,17 +5,39 @@ package codec
 
 import (
 	"bytes"
+	"errors"
 	"io"
+	"reflect"
+
 	// using codec.XXX directly
 	. "github.com/ugorji/go/codec"
+
+	gocmp "github.com/google/go-cmp/cmp"
 )
 
-// variables that are not flags, but which can configure the handles
-var (
-	testEncodeOptions EncodeOptions
-	testDecodeOptions DecodeOptions
-	testRPCOptions    RPCOptions
-)
+type testBenchVars struct {
+	*testVars
+
+	// variables that are not flags, but which can configure the handles
+	E EncodeOptions
+	D DecodeOptions
+	R RPCOptions
+}
+
+func (x *testBenchVars) setBufsize(v int) {
+	x.E.WriterBufferSize = v
+	x.D.ReaderBufferSize = v
+}
+
+func (x *testBenchVars) updateHandleOptions() {
+	x.D.MaxInitLen = testv.maxInitLen
+	x.D.ZeroCopy = testv.zeroCopy
+	x.setBufsize((int)(x.bufsize))
+}
+
+var tbvars = testBenchVars{
+	testVars: &testv,
+}
 
 type testHED struct {
 	H   Handle
@@ -61,12 +83,16 @@ var (
 
 func init() {
 	// doTestInit()
-	testPreInitFns = append(testPreInitFns, doTestInit)
+	testPreInitFns = append(testPreInitFns, doTestUpdateHandleOptions, doTestInit)
 	testPostInitFns = append(testPostInitFns, doTestPostInit)
 	// doTestInit MUST be the first function executed during a reinit
 	// testReInitFns = slices.Insert(testReInitFns, 0, doTestInit)
 	// testReInitFns = slices.Insert(testReInitFns, 0, doTestReinit)
 	testReInitFns = append(testReInitFns, doTestInit, doTestPostInit)
+}
+
+func doTestUpdateHandleOptions() {
+	tbvars.updateHandleOptions()
 }
 
 func doTestInit() {
@@ -133,8 +159,8 @@ func testSharedCodecEncode(ts interface{}, bsIn []byte,
 	// bs = make([]byte, 0, approxSize)
 	var e *Encoder
 	var buf *bytes.Buffer
-	useIO := testUseIoEncDec >= 0
-	if testUseReset && !testUseParallel {
+	useIO := tbvars.E.WriterBufferSize >= 0
+	if testv.UseReset && !testv.UseParallel {
 		hed := testHEDGet(h)
 		if useIO {
 			e = hed.Eio
@@ -150,7 +176,7 @@ func testSharedCodecEncode(ts interface{}, bsIn []byte,
 	// var oldWriteBufferSize int
 	if useIO {
 		buf = fn(bsIn)
-		if testUseIoWrapper {
+		if testv.UseIoWrapper {
 			e.Reset(ioWriterWrapper{buf})
 		} else {
 			e.Reset(buf)
@@ -164,7 +190,7 @@ func testSharedCodecEncode(ts interface{}, bsIn []byte,
 	} else {
 		err = e.Encode(ts)
 	}
-	if testUseIoEncDec >= 0 {
+	if useIO {
 		bs = buf.Bytes()
 	}
 	return
@@ -172,8 +198,8 @@ func testSharedCodecEncode(ts interface{}, bsIn []byte,
 
 func testSharedCodecDecoder(bs []byte, h Handle) (d *Decoder) {
 	// var buf *bytes.Reader
-	useIO := testUseIoEncDec >= 0
-	if testUseReset && !testUseParallel {
+	useIO := tbvars.D.ReaderBufferSize >= 0
+	if testv.UseReset && !testv.UseParallel {
 		hed := testHEDGet(h)
 		if useIO {
 			d = hed.Dio
@@ -187,7 +213,7 @@ func testSharedCodecDecoder(bs []byte, h Handle) (d *Decoder) {
 	}
 	if useIO {
 		buf := bytes.NewReader(bs)
-		if testUseIoWrapper {
+		if testv.UseIoWrapper {
 			d.Reset(ioReaderWrapper{buf})
 		} else {
 			d.Reset(buf)
@@ -212,11 +238,38 @@ func testUpdateBasicHandleOptions(bh *BasicHandle) {
 	// cleanInited() not needed, as we re-create the Handles on each reinit
 	// bh.clearInited() // so it is reinitialized next time around
 	// pre-fill them first
-	bh.EncodeOptions = testEncodeOptions
-	bh.DecodeOptions = testDecodeOptions
-	bh.RPCOptions = testRPCOptions
+	bh.EncodeOptions = tbvars.E
+	bh.DecodeOptions = tbvars.D
+	bh.RPCOptions = tbvars.R
 	// bh.InterfaceReset = true
 	// bh.PreferArrayOverSlice = true
 	// modify from flag'ish things
 	// bh.MaxInitLen = testMaxInitLen
+}
+
+func testUseIO() bool {
+	return tbvars.D.ReaderBufferSize >= 0
+}
+
+var errDeepEqualNotMatch = errors.New("not match")
+
+// var testCmpOpts []gocmp.Option
+//
+// var testCmpOpts = []cmp.Option{
+// 	cmpopts.EquateNaNs(),
+// 	cmpopts.EquateApprox(0.001, 0.001),
+// 	cmpopts.SortMaps(func(a, b float32) bool { return a < b }),
+// 	cmpopts.SortMaps(func(a, b float64) bool { return a < b }),
+// }
+
+// perform a simple DeepEqual expecting same values
+func testEqual(v1, v2 interface{}) (err error) {
+	if !reflect.DeepEqual(v1, v2) {
+		if testv.UseDiff {
+			err = errors.New(gocmp.Diff(v1, v2))
+		} else {
+			err = errDeepEqualNotMatch
+		}
+	}
+	return
 }

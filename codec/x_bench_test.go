@@ -72,7 +72,7 @@ func benchXPreInit() {
 }
 
 func fnVMsgpackEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
-	if testUseIoEncDec >= 0 {
+	if testUseIO() {
 		buf := bytes.NewBuffer(bsIn[:0]) // new(bytes.Buffer)
 		err := vmsgpack.NewEncoder(buf).Encode(ts)
 		return buf.Bytes(), err
@@ -81,7 +81,7 @@ func fnVMsgpackEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
 }
 
 func fnVMsgpackDecodeFn(buf []byte, ts interface{}) error {
-	if testUseIoEncDec >= 0 {
+	if testUseIO() {
 		return vmsgpack.NewDecoder(bytes.NewReader(buf)).Decode(ts)
 	}
 	return vmsgpack.Unmarshal(buf, ts)
@@ -104,7 +104,7 @@ func fnMgobsonDecodeFn(buf []byte, ts interface{}) error {
 }
 
 func fnJsonIterEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
-	if testUseIoEncDec >= 0 {
+	if testUseIO() {
 		buf := bytes.NewBuffer(bsIn[:0]) // new(bytes.Buffer)
 		err := jsoniter.NewEncoder(buf).Encode(ts)
 		return buf.Bytes(), err
@@ -113,14 +113,14 @@ func fnJsonIterEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
 }
 
 func fnJsonIterDecodeFn(buf []byte, ts interface{}) error {
-	if testUseIoEncDec >= 0 {
+	if testUseIO() {
 		return jsoniter.NewDecoder(bytes.NewReader(buf)).Decode(ts)
 	}
 	return jsoniter.Unmarshal(buf, ts)
 }
 
 func fnGoccyJsonEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
-	if testUseIoEncDec >= 0 {
+	if testUseIO() {
 		buf := fnBenchmarkByteBuf(bsIn)
 		err := goccyjson.NewEncoder(buf).Encode(ts)
 		return buf.Bytes(), err
@@ -129,14 +129,14 @@ func fnGoccyJsonEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
 }
 
 func fnGoccyJsonDecodeFn(buf []byte, ts interface{}) error {
-	if testUseIoEncDec >= 0 {
+	if testUseIO() {
 		return goccyjson.NewDecoder(bytes.NewReader(buf)).Decode(ts)
 	}
 	return goccyjson.Unmarshal(buf, ts)
 }
 
 func fnJsonv2EncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
-	if testUseIoEncDec >= 0 {
+	if testUseIO() {
 		buf := fnBenchmarkByteBuf(bsIn)
 		err := jsonv2.MarshalWrite(buf, ts, jsonv2Opts)
 		return buf.Bytes(), err
@@ -145,14 +145,14 @@ func fnJsonv2EncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
 }
 
 func fnJsonv2DecodeFn(buf []byte, ts interface{}) error {
-	if testUseIoEncDec >= 0 {
+	if testUseIO() {
 		return jsonv2.UnmarshalRead(bytes.NewReader(buf), ts, jsonv2Opts)
 	}
 	return jsonv2.Unmarshal(buf, ts, jsonv2Opts)
 }
 
 func fnFxcborEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
-	if testUseIoEncDec >= 0 {
+	if testUseIO() {
 		buf := bytes.NewBuffer(bsIn[:0])
 		err := fxcbor.NewEncoder(buf).Encode(ts)
 		return buf.Bytes(), err
@@ -161,7 +161,7 @@ func fnFxcborEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
 }
 
 func fnFxcborDecodeFn(buf []byte, ts interface{}) error {
-	if testUseIoEncDec >= 0 {
+	if testUseIO() {
 		return fxcbor.NewDecoder(bytes.NewReader(buf)).Decode(ts)
 	}
 	return fxcbor.Unmarshal(buf, ts)

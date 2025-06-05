@@ -50,7 +50,7 @@ func fnStdXmlDecodeFn(buf []byte, ts interface{}) error {
 }
 
 func fnStdJsonEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
-	if testUseIoEncDec >= 0 {
+	if testUseIO() {
 		buf := fnBenchmarkByteBuf(bsIn)
 		err := json.NewEncoder(buf).Encode(ts)
 		return buf.Bytes(), err
@@ -59,7 +59,7 @@ func fnStdJsonEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
 }
 
 func fnStdJsonDecodeFn(buf []byte, ts interface{}) error {
-	if testUseIoEncDec >= 0 {
+	if testUseIO() {
 		return json.NewDecoder(bytes.NewReader(buf)).Decode(ts)
 	}
 	return json.Unmarshal(buf, ts)
