@@ -97,20 +97,12 @@ _gen() {
 #
 
 _suite_tests() {
-    if [[ "${do_x}" = "1" ]]; then
-        printf "\n==== X Baseline ====\n"
-        ${go[@]} test "${zargs[@]}" -tags x -v "$@"
-    else
-        printf "\n==== Baseline ====\n"
-        ${go[@]} test "${zargs[@]}" -v "$@"
-    fi
-    if [[ "${do_x}" = "1" ]]; then
-        printf "\n==== X Generated ====\n"
-        ${go[@]} test "${zargs[@]}" -tags "x generated" -v "$@"
-    else
-        printf "\n==== Generated ====\n"
-        ${go[@]} test "${zargs[@]}" -tags "generated" -v "$@"
-    fi
+    local t=""
+    [[ "${do_x}" = "1" ]] && t="x "
+    printf "\n==== ${t}Baseline ====\n"
+    ${go[@]} test "${zargs[@]}" -tags "${t}" -run "." -bench "IGNORE" -v "$@"
+    printf "\n==== ${t}Generated ====\n"
+    ${go[@]} test "${zargs[@]}" -tags "${t}generated" -run "." -bench "IGNORE" -v "$@"
 }
 
 _suite_tests_strip_file_line() {
@@ -128,7 +120,7 @@ _suite_any() {
     if [[ "$g" = "g" ]]; then a=( "generated" "generated codec.safe"); fi
     for i in "${a[@]}"; do
         echo ">>>> bench TAGS: 'alltests $x $i' SUITE: $b"
-        ${go[@]} test "${zargs[@]}" -tags "alltests $x $i" -bench "$b" -benchtime "$t" -benchmem "$@"
+        ${go[@]} test "${zargs[@]}" -tags "alltests $x $i" -run "IGNORE" -bench "$b" -benchtime "$t" -benchmem "$@"
     done
 }
 
