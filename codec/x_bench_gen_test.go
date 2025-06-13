@@ -1,5 +1,4 @@
 //go:build x && generated
-// +build x,generated
 
 // Copyright (c) 2012-2020 Ugorji Nwoke. All rights reserved.
 // Use of this source code is governed by a MIT license found in the LICENSE file.
@@ -52,7 +51,7 @@ func fnEasyjsonEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
 	if !ok || ts2 == nil {
 		return nil, errors.New("easyjson: input is not a easyjson.Marshaler")
 	}
-	if testUseIoEncDec >= 0 {
+	if testUseIO() {
 		buf := bytes.NewBuffer(bsIn[:0]) // new(bytes.Buffer)
 		_, err := easyjson.MarshalToWriter(ts2, buf)
 		return buf.Bytes(), err
@@ -66,7 +65,7 @@ func fnEasyjsonDecodeFn(buf []byte, ts interface{}) error {
 	if !ok {
 		return errors.New("easyjson: input is not a easyjson.Unmarshaler")
 	}
-	if testUseIoEncDec >= 0 {
+	if testUseIO() {
 		return easyjson.UnmarshalFromReader(bytes.NewReader(buf), ts2)
 	}
 	return easyjson.Unmarshal(buf, ts2)
@@ -95,7 +94,7 @@ func fnMsgpEncodeFn(ts interface{}, bsIn []byte) ([]byte, error) {
 	if _, ok := ts.(msgp.Encodable); !ok {
 		return nil, fmt.Errorf("msgp: input of type %T is not a msgp.Encodable", ts)
 	}
-	if testUseIoEncDec >= 0 {
+	if testUseIO() {
 		buf := fnBenchmarkByteBuf(bsIn)
 		err := ts.(msgp.Encodable).EncodeMsg(msgp.NewWriter(buf))
 		return buf.Bytes(), err
@@ -107,7 +106,7 @@ func fnMsgpDecodeFn(buf []byte, ts interface{}) (err error) {
 	if _, ok := ts.(msgp.Decodable); !ok {
 		return fmt.Errorf("msgp: input of type %T is not a msgp.Decodable", ts)
 	}
-	if testUseIoEncDec >= 0 {
+	if testUseIO() {
 		err = ts.(msgp.Decodable).DecodeMsg(msgp.NewReader(bytes.NewReader(buf)))
 		return
 	}
