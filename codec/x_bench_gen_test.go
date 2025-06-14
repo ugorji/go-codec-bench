@@ -130,10 +130,12 @@ func Benchmark__Easyjson___Decode(b *testing.B) {
 	fnBenchmarkDecode(b, "easyjson", benchTs, fnEasyjsonEncodeFn, fnEasyjsonDecodeFn, fnBenchNewTs)
 }
 
-func Benchmark__Ffjson_____Encode(b *testing.B) {
+// MARKER use _ in front of func name to prevent it from running
+
+func _Benchmark__Ffjson_____Encode(b *testing.B) {
 	fnBenchmarkEncode(b, "ffjson", benchTs, fnFfjsonEncodeFn)
 }
 
-func Benchmark__Ffjson_____Decode(b *testing.B) {
+func _Benchmark__Ffjson_____Decode(b *testing.B) {
 	fnBenchmarkDecode(b, "ffjson", benchTs, fnFfjsonEncodeFn, fnFfjsonDecodeFn, fnBenchNewTs)
 }
