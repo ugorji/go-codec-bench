@@ -138,7 +138,7 @@ _suite_very_quick_json_non_suite() {
             if [[ "${t}" =~ generated ]]; then b="Json|Easyjson"; fi
         fi            
         for j in "${js[@]}"; do
-            ${go[@]} test "${zargs[@]}" -tags "${t}" -bench "__(${b})__.*${j}" -benchmem "$@"
+            ${go[@]} test "${zargs[@]}" -tags "${t}" -run "IGNORE" -bench "__(${b})__.*${j}" -benchmem "$@"
             [[ "${b}" != Json ]] && echo # echo if more than 1 line is printed
         done
     done
@@ -153,7 +153,7 @@ _suite_very_quick_benchmark() {
     local c="${3}"
     local t="${4:-1s}" # 4s 1x
     shift 4
-    ${go[@]} test "${zargs[@]}" -tags "alltests ${c}" -bench "__${a}__.*${b}" -benchmem -benchtime "${t}" "$@"
+    ${go[@]} test "${zargs[@]}" -tags "alltests ${c}" -run "IGNORE" -bench "__${a}__.*${b}" -benchmem -benchtime "${t}" "$@"
 }
 
 _suite_trim_output() {
