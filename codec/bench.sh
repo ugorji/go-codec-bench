@@ -126,6 +126,7 @@ _suite_any() {
 
 _suite_very_quick_json_non_suite() {
     local t="${1:-x}"
+    # t="${1:-x codec.notmono}"
     shift
     echo ">>>> very quick json bench"
     local tags=("${t}" "${t} generated" "${t} codec.safe" "${t} generated codec.safe" "${t} codec.notfastpath")
@@ -136,7 +137,7 @@ _suite_very_quick_json_non_suite() {
         if [[ "${t}" =~ x && ! "${t}" =~ safe && ! "${t}" =~ notfastpath ]]; then
             b="Json|Std_Json|JsonIter|GoccyJson"
             if [[ "${t}" =~ generated ]]; then b="Json|Easyjson"; fi
-        fi            
+        fi
         for j in "${js[@]}"; do
             ${go[@]} test "${zargs[@]}" -tags "${t}" -run "IGNORE" -bench "__(${b})__.*${j}" -benchmem "$@"
             [[ "${b}" != Json ]] && echo # echo if more than 1 line is printed
