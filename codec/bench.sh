@@ -126,15 +126,15 @@ _suite_any() {
 
 _suite_very_quick_json_non_suite() {
     local t="${1:-x}"
-    # t="${1:-x codec.notmono}"
+    # t="${1:-x codec.notfastpath}" # TODO: COMMENT OUT
     shift
     echo ">>>> very quick json bench"
-    local tags=("${t}" "${t} generated" "${t} codec.safe" "${t} generated codec.safe" "${t} codec.notfastpath")
+    local tags=("${t}" "${t} generated" "${t} default" "${t} codec.safe" "${t} codec.notfastpath" "${t} codec.notmono" "${t} codec.notfastpath codec.notmono")
     local js=( En De )
     for t in "${tags[@]}"; do
         echo "---- tags: ${t} ----"
         local b="Json"
-        if [[ "${t}" =~ x && ! "${t}" =~ safe && ! "${t}" =~ notfastpath ]]; then
+        if [[ "${t}" =~ x && ! "${t}" =~ safe && ! "${t}" =~ notfastpath && ! "${t}" =~ notmono && ! "${t}" =~ default ]]; then
             b="Json|Std_Json|JsonIter|GoccyJson"
             if [[ "${t}" =~ generated ]]; then b="Json|Easyjson"; fi
         fi
